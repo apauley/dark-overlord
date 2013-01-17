@@ -1,4 +1,4 @@
--module(darklord).
+-module(sponge).
 -behaviour(gen_server).
 -define(SERVER, ?MODULE).
 
