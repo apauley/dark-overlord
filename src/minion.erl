@@ -10,6 +10,8 @@
 %% These exports are for direct minion commands
 -export([sing/0, sing/1, minion_info/0]).
 
+-define(DERANGEDLAUGH_RANDOM_MAX, 1000).
+
 aye_dark_overlord(MasterPID) ->
   %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
   _Ref = erlang:monitor(process, MasterPID),
@@ -20,6 +22,7 @@ aye_dark_overlord(MasterPID) ->
   minion_wait(MasterPID).
 
 minion_wait(MasterPID) ->
+  random_deranged_laugh(),
   receive
     Message ->
       minion_message_handler(Message, MasterPID)
@@ -63,6 +66,23 @@ sing(Lines, _OSType={unix,darwin}) ->
   Cmd = "osascript -e 'set Volume 6'; say -v cello " ++ Song,
   os:cmd(Cmd);
 sing(_Lines, _OSType) ->
+  ok.
+
+random_deranged_laugh() ->
+  random_deranged_laugh(random:uniform(?DERANGEDLAUGH_RANDOM_MAX)).
+
+random_deranged_laugh(?DERANGEDLAUGH_RANDOM_MAX) ->
+  deranged_laugh();
+random_deranged_laugh(_OtherRandomInt) ->
+  ok.
+
+deranged_laugh() ->
+  deranged_laugh(os:type()).
+
+deranged_laugh(_OSType={unix,darwin}) ->
+  Cmd = "osascript -e 'set Volume 2'; say -v Deranged hahahaha",
+  os:cmd(Cmd);
+deranged_laugh(_OSType) ->
   ok.
 
 display_song(Lines) ->
