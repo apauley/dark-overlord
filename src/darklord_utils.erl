@@ -17,5 +17,4 @@ multicall(FunctionName, Args, Timeout) ->
   rpc:multicall(minion, FunctionName, Args, Timeout).
 
 code_loads() ->
-  {ok, minion} = c:c(minion),
   abcast = c:nl(minion).

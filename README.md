@@ -21,6 +21,18 @@ $ erl -sname hypnosponge@overlord -setcookie TheHypnoSpongeKnowsBest
 
 ## The Minions: Connect to the Dark Overlord
 
+Each minion should be able to ping the name overlord, so make sure that the minion /etc/hosts files are updated with the name "overlord" and the corresponding IP address.
+
+```bash
+$ ping overlord
+PING overlord (192.168.8.123): 56 data bytes
+64 bytes from 192.168.8.123: icmp_seq=0 ttl=64 time=0.044 ms
+^C
+--- overlord ping statistics ---
+1 packets transmitted, 1 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.044/0.044/0.044/0.000 ms
+```
+
 ```bash
 $ erl -sname minion -connect_all false -setcookie TheHypnoSpongeKnowsBest -s net_adm ping_list hypnosponge@overlord
 ```
