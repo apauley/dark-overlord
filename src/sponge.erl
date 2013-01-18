@@ -5,14 +5,14 @@
 -define(SERVER, ?MODULE).
 -define(DEFAULT_TIMEOUT, 5000).
 
-%% -record(state, {pids=[]}).
+-record(state, {minions=[]}).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
 
 -export([start/0, stop/0]).
--export([enslave/0]).
+-export([enslave/0, sing/0]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -34,6 +34,9 @@ stop() ->
 enslave() ->
   gen_server:call(?SERVER,enslave,?DEFAULT_TIMEOUT).
 
+sing() ->
+  gen_server:call(?SERVER,sing,?DEFAULT_TIMEOUT).
+
 %% ------------------------------------------------------------------
 %% Internal Startup Functions
 %% ------------------------------------------------------------------
@@ -46,12 +49,18 @@ start_link() ->
 %% ------------------------------------------------------------------
 
 init(_Args) ->
-  Pids = enslave_nodes(nodes()),
-  {ok, Pids}.
+  Pids = enslave_nodes(),
+  State = #state{minions=Pids},
+  {ok, State}.
 
 handle_call(enslave, _From, State) ->
   Pids = enslave_nodes(),
-  {reply,{ok, Pids},State};
+  NewState = State#state{minions=Pids},
+  {reply,{ok, Pids},NewState};
+
+handle_call(sing, _From, State) ->
+  ok = minion_message(sing, State),
+  {reply,ok,State};
 
 handle_call(stop, _From, State) ->
   {stop,normal,State}.
@@ -76,7 +85,7 @@ enslave_nodes() ->
   enslave_nodes(nodes()).
 
 enslave_nodes(Nodes) ->
-  dark_lord_utils:code_loads(),
+  darklord_utils:code_loads(),
   [enslave_node(Node) || Node <- Nodes].
 
 enslave_node(Node) ->
@@ -84,3 +93,10 @@ enslave_node(Node) ->
   Minion = spawn(Node, minion, aye_dark_overlord, [self()]),
   io:format("~p~n",[Minion]),
   Minion.
+
+minion_message(Message, State) ->
+  MinionPids = State#state.minions,
+  MessageFun = fun(Pid) ->
+                   Pid ! Message
+               end,
+  lists:foreach(MessageFun, MinionPids).

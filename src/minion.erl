@@ -25,7 +25,7 @@ minion_wait(MasterPID) ->
   end.
 
 minion_message_handler(_Message=sing, MasterPID, FunctionName) ->
-  minion_utils:sing(),
+  sing(),
   ?MODULE:FunctionName(MasterPID);
 minion_message_handler(Message, MasterPID, FunctionName) ->
   io:format("[~p] ~p unknown message: ~p~n",[?MODULE, FunctionName, Message]),
