@@ -8,7 +8,7 @@
 -export([aye_dark_overlord/1]).
 
 %% These exports are for direct minion commands
--export([sing/0, sing/1]).
+-export([sing/0, sing/1, minion_info/0]).
 
 aye_dark_overlord(MasterPID) ->
   Text = lists:flatten(io_lib:format("~p (~p) Aye, Dark Overlord who lives at ~p!~n",[node(), self(), MasterPID])),
@@ -53,3 +53,8 @@ sing(_Lines, _OSType) ->
 
 display_song(Lines) ->
   [erlang:display(Line) || Line <- Lines].
+
+minion_info() ->
+  OTPVersion = erlang:system_info(otp_release),
+  OS = os:type(),
+  {node(), self(), OTPVersion, OS}.

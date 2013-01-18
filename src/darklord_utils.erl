@@ -10,8 +10,12 @@ multicall(FunctionName) ->
   multicall(FunctionName, _Args=[]).
 
 multicall(FunctionName, Args) ->
+  multicall(FunctionName, Args, _Timeout=10000).
+
+multicall(FunctionName, Args, Timeout) ->
   code_loads(),
-  rpc:multicall(minion, FunctionName, Args).
+  rpc:multicall(minion, FunctionName, Args, Timeout).
 
 code_loads() ->
-  c:nl(minion).
+  {ok, minion} = c:c(minion),
+  abcast = c:nl(minion).

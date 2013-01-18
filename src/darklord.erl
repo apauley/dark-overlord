@@ -6,7 +6,10 @@
 
 -module(darklord).
 
--export([sing/0]).
+-export([minion_info/0, sing/0]).
+
+minion_info() ->
+  darklord_utils:multicall(minion_info).
 
 sing() ->
   Line1 = "Your node now belongs to me",

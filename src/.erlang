@@ -1,0 +1,2 @@
+net_kernel:start(['hypnosponge@overlord', shortnames]).
+erlang:set_cookie(node(), 'TheHypnoSpongeKnowsBest').

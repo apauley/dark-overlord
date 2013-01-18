@@ -14,6 +14,7 @@ $ ./rebar compile
 
 ## The Dark Overlord: Starting the master node
 
+Change into the ebin directory with all the compiled beams, and start the master node with the following command:
 ```bash
 $ erl -sname hypnosponge@overlord -setcookie TheHypnoSpongeKnowsBest
 ```
