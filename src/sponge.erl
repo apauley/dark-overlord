@@ -12,7 +12,7 @@
 %% ------------------------------------------------------------------
 
 -export([start/0, stop/0]).
--export([enslave/0, sing/0]).
+-export([enslave/0]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -33,10 +33,6 @@ stop() ->
 
 enslave() ->
   gen_server:call(?SERVER,enslave,?DEFAULT_TIMEOUT).
-
-sing() ->
-  multicall(sing).
-  %% gen_server:call(?SERVER,sing,?DEFAULT_TIMEOUT).
 
 %% ------------------------------------------------------------------
 %% Internal Startup Functions
@@ -80,7 +76,7 @@ enslave_nodes() ->
   enslave_nodes(nodes()).
 
 enslave_nodes(Nodes) ->
-  code_loads(),
+  dark_lord_utils:code_loads(),
   [enslave_node(Node) || Node <- Nodes].
 
 enslave_node(Node) ->
@@ -88,13 +84,3 @@ enslave_node(Node) ->
   Minion = spawn(Node, minion, aye_dark_overlord, [self()]),
   io:format("~p~n",[Minion]),
   Minion.
-
-multicall(FunctionName) ->
-  multicall(FunctionName, _Args=[]).
-
-multicall(FunctionName, Args) ->
-  code_loads(),
-  rpc:multicall(minion, FunctionName, Args).
-
-code_loads() ->
-  c:nl(minion).
