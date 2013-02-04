@@ -10,7 +10,7 @@
 %% These exports are for direct minion commands
 -export([sing/0, sing/1, minion_info/0]).
 
--define(DERANGEDLAUGH_RANDOM_MAX, 1000).
+-define(DERANGEDLAUGH_RANDOM_MAX, 7000).
 
 aye_dark_overlord(MasterPID) ->
   %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
@@ -19,6 +19,7 @@ aye_dark_overlord(MasterPID) ->
   Text = lists:flatten(io_lib:format("~p (~p) Aye, Dark Overlord who lives at ~p~n",[node(), self(), MasterPID])),
   io:format(Text),
   erlang:display_string(Text),
+  random:seed(now()),
   minion_wait(MasterPID).
 
 minion_wait(MasterPID) ->

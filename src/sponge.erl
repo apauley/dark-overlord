@@ -11,7 +11,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start/0, stop/0, restart/0]).
+-export([start_link/0, start/0, stop/0, restart/0]).
 -export([enslave/0, pids/0, process_info/0,
          minion_info/0, sing/0, send/1]).
 
@@ -28,6 +28,9 @@
 
 start() ->
   gen_server:start({local, ?SERVER}, ?MODULE, [], []).
+
+start_link() ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 restart() ->
   stop(),
@@ -123,7 +126,7 @@ call(CallName) ->
   gen_server:call(?SERVER,CallName,?DEFAULT_TIMEOUT).
 
 enslave_nodes() ->
-  enslave_nodes([node()|nodes()]).
+  enslave_nodes(nodes()).
 
 enslave_nodes(Nodes) ->
   [enslave_node(Node) || Node <- Nodes].
