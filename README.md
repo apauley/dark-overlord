@@ -9,6 +9,7 @@ The necessary minion code will then be loaded into the remote nodes by the maste
 ### Compiling
 
 ```bash
+$ ./rebar get-deps
 $ ./rebar compile
 ```
 
