@@ -1,4 +1,5 @@
 deps/*
+rel/overlord
 *.beam
 *.app
 erl_crash.dump
