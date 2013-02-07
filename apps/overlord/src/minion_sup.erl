@@ -1,12 +1,12 @@
 %%%-------------------------------------------------------------------
 %%% @author Andreas Pauley <>
 %%%-------------------------------------------------------------------
--module(overlord_sup).
+-module(minion_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -17,26 +17,26 @@
 %% API functions
 %% ===================================================================
 
-start_link() ->
-  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(HypnoSpongePid) ->
+  supervisor:start_link({local, ?SERVER}, ?MODULE, [HypnoSpongePid]).
 
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([]) ->
-  RestartStrategy = one_for_all,
-  MaxRestarts = 3,
+init([HypnoSpongePid]) ->
+  RestartStrategy = simple_one_for_one,
+  MaxRestarts = 5,
   MaxSecondsBetweenRestarts = 3600,
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-  Restart = permanent,
+  Restart = temporary,
   Shutdown = 5000,
   Type = worker,
 
-  AChild = {sponge, {sponge, start_link, [self()]},
-            Restart, Shutdown, Type, [sponge]},
+  AChild = {minion, {minion, start_link, [HypnoSpongePid]},
+            Restart, Shutdown, Type, [minion]},
 
   {ok, {SupFlags, [AChild]}}.

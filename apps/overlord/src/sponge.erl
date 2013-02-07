@@ -5,14 +5,15 @@
 -define(SERVER, ?MODULE).
 -define(DEFAULT_TIMEOUT, 5000).
 
--record(state, {minions=[]}).
+-record(state, {minion_supervisor,
+                minions=[]}).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0, start/0, stop/0, restart/0]).
--export([enslave/0, pids/0, process_info/0,
+-export([start_link/1, stop/0]).
+-export([pids/0, process_info/0,
          minion_info/0, sing/0, send/1]).
 
 %% ------------------------------------------------------------------
@@ -26,21 +27,11 @@
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-start() ->
-  gen_server:start({local, ?SERVER}, ?MODULE, [], []).
-
-start_link() ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
-restart() ->
-  stop(),
-  start().
+start_link(OverlordSupervisorPid) ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [OverlordSupervisorPid], _Options=[]).
 
 stop() ->
   gen_server:call(?SERVER,stop,?DEFAULT_TIMEOUT).
-
-enslave() ->
-  call(enslave).
 
 pids() ->
   call(minion_pids).
@@ -61,16 +52,10 @@ send(Message) ->
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
-init(_Args) ->
+init([OverlordSupervisorPid]) ->
   darklord_utils:code_loads(),
-  Pids = enslave_nodes(),
-  State = #state{minions=Pids},
-  {ok, State}.
-
-handle_call(enslave, _From, State) ->
-  Pids = enslave_nodes(),
-  NewState = State#state{minions=Pids},
-  {reply,{ok, Pids},NewState};
+  self() ! {start_minion_supervisor, OverlordSupervisorPid},
+  {ok, #state{}}.
 
 handle_call(minion_pids, _From, State) ->
   Pids = State#state.minions,
@@ -100,6 +85,18 @@ handle_call(stop, _From, State) ->
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
+handle_info({start_minion_supervisor, OverlordSupervisorPid}, State = #state{}) ->
+  MinionSupSpec = {minion_sup,
+                   {minion_sup, start_link, [self()]},
+                   temporary,
+                   10000,
+                   supervisor,
+                   [minion_sup]},
+  {ok, MinionSupPid} = supervisor:start_child(OverlordSupervisorPid, MinionSupSpec),
+  link(MinionSupPid),
+
+  NewState = enslave_nodes(State#state{minion_supervisor=MinionSupPid}),
+  {noreply, NewState};
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
   io:format("[~p] ~p ~p 'DOWN', Reason: ~p\n",[?MODULE, Pid, _Ref, _Reason]),
   Pids = State#state.minions,
@@ -125,17 +122,28 @@ call(CallName) ->
   %% darklord_utils:code_loads(),
   gen_server:call(?SERVER,CallName,?DEFAULT_TIMEOUT).
 
-enslave_nodes() ->
-  enslave_nodes(nodes()).
+enslave_nodes(State = #state{minion_supervisor=MinionSupPid}) ->
+  Minions = enslave_nodes(MinionSupPid),
+  NewState = State#state{minions=Minions},
+  NewState;
+enslave_nodes(MinionSupPid) when is_pid(MinionSupPid) ->
+  enslave_nodes(nodes(), MinionSupPid).
 
-enslave_nodes(Nodes) ->
-  [enslave_node(Node) || Node <- Nodes].
+enslave_nodes(Nodes, MinionSupPid) ->
+  [enslave_node(Node, MinionSupPid) || Node <- Nodes].
 
-enslave_node(Node) ->
-  io:format("[~p] Enslaving Node ~p ... ",[?MODULE, Node]),
-  Minion = spawn(Node, minion, aye_dark_overlord, [self()]),
+enslave_node(Node, MinionSupPid) ->
+  io:format("[~p] Enslaving Node ~p ...~n",[?MODULE, Node]),
+  StartChildReturn = supervisor:start_child(MinionSupPid, [Node]),
+  Minion = case StartChildReturn of
+             {ok, Pid} when is_pid(Pid) ->
+               Pid;
+             {error, Pid} when is_pid(Pid)  ->
+               io:format("[~p] start_child returned error after spawning successfully. WHY??????~n",[?MODULE]),
+               Pid
+           end,
   _Ref = erlang:monitor(process, Minion),
-  io:format("~p~n",[Minion]),
+  io:format("Enslaved ~p on node ~p~n",[Minion, Node]),
   Minion.
 
 minion_message(Message, State) ->
