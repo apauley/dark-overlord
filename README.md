@@ -77,6 +77,7 @@ $ erl -name minion -setcookie overlord -s net_adm ping_list overlord@192.168.8.1
 You may need to change "-name minion" above to include the minion IP, as in "-name minion@192.168.8.111".
 
 You can enter some shell commands to check if it worked. You should see your overlord in the list of nodes:
+
 ```erlang
 (minion@iris)1> nodes().
 [overlord@192.168.8.123]
@@ -86,20 +87,15 @@ pong
 
 ## The Dark Overlord: Controlling your army of minions
 
-Once your minions have connected, you can send some direct commands (rpc calls):
+Once your minions have connected, you can start up the overlord app.
+Among other things this will start the hypnosponge.
+As you might very well know, any decent overlord needs a hypnosponge for Minion Mind Control (MMC).
+Now you can compell your minions to do your bidding out of "their own free will" (muhahaha!!!)
 
 ```erlang
-(overlord@192.168.8.123)1> darklord:minion_info().
-(overlord@192.168.8.123)2> darklord:sing().
+(overlord@192.168.8.123)3> overlord:restart().
+(overlord@192.168.8.123)4> overlord:minion_info().
+(overlord@192.168.8.123)5> overlord:sing().
 ```
 
-Or you can start up the hypnosponge and compell your minions to do your bidding out of "their own free will" (muhahaha!!!):
-```erlang
-(overlord@192.168.8.123)3> sponge:start().
-(overlord@192.168.8.123)4> sponge:minion_info().
-(overlord@192.168.8.123)5> sponge:sing().
-```
-
-The hypnosponge spawns process on the remote nodes.
-The idea with the hypnosponge is that the minions are instructed to do something and to continue with this on their own.
-With the darklord rpc calls above we needed to wait for the calls to finish.
+The hypnosponge spawns a minion process on each of the connected remote nodes.
