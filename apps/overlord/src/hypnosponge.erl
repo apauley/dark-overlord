@@ -34,19 +34,19 @@ stop() ->
   gen_server:call(?SERVER,stop,?DEFAULT_TIMEOUT).
 
 pids() ->
-  call(minion_pids).
+  gen_server:call(?SERVER,minion_pids,?DEFAULT_TIMEOUT).
 
 process_info() ->
-  call(process_info).
+  gen_server:call(?SERVER,process_info,?DEFAULT_TIMEOUT).
 
 minion_info() ->
-  call(minion_info).
+  gen_server:call(?SERVER,minion_info,?DEFAULT_TIMEOUT).
 
 sing() ->
-  call(sing).
+  gen_server:call(?SERVER,sing,?DEFAULT_TIMEOUT).
 
 send(Message) ->
-  call({send, Message}).
+  gen_server:call(?SERVER,{send, Message},?DEFAULT_TIMEOUT).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
@@ -116,9 +116,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
-
-call(CallName) ->
-  gen_server:call(?SERVER,CallName,?DEFAULT_TIMEOUT).
 
 enslave_nodes(State = #state{minion_supervisor=MinionSupPid}) ->
   Minions = enslave_nodes(MinionSupPid),
