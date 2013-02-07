@@ -7,6 +7,8 @@
          stop/0,
          restart/0,
          minion_info/0,
+         minion_crash/0,
+         minion_exit/1,
          sing/0]).
 
 start() ->
@@ -21,6 +23,12 @@ restart() ->
 
 minion_info() ->
   hypnosponge:minion_info().
+
+minion_crash() ->
+  hypnosponge:minion_crash().
+
+minion_exit(Reason) ->
+  hypnosponge:minion_exit(Reason).
 
 sing() ->
   hypnosponge:sing().

@@ -5,7 +5,8 @@
 -module(darklord_utils).
 
 -export([multicall/1, multicall/2,
-         load_code/0, load_code/1]).
+         load_code/0, load_code/1,
+         log/3]).
 
 multicall(FunctionName) ->
   multicall(FunctionName, _Args=[]).
@@ -24,9 +25,16 @@ load_code() ->
   [load_code(Node) || Node <- nodes()].
 
 load_code(Node) ->
-  ModulesToLoad = [minion],
+  ModulesToLoad = [?MODULE, minion],
   [load_code(Module, Node) || Module <- ModulesToLoad].
 
 load_code(Module, Node) ->
   {_Module, Binary, Filename} = code:get_object_code(Module),
   rpc:call(Node, code, load_binary, [Module, Filename, Binary]).
+
+log(Module, String, Params) ->
+  log("[~p] "++String, [Module|Params]).
+
+log(String, Params) ->
+  Text = lists:flatten(io_lib:format(String, Params)),
+  erlang:display_string(Text).

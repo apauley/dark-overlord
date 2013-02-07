@@ -13,8 +13,14 @@
 %% ------------------------------------------------------------------
 
 -export([start_link/1, stop/0]).
--export([pids/0, process_info/0,
-         minion_info/0, sing/0, send/1]).
+
+-export([pids/0,
+         process_info/0,
+         minion_info/0,
+         minion_crash/0,
+         minion_exit/1,
+         sing/0,
+         send/1]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -27,8 +33,8 @@
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-start_link(OverlordSupervisorPid) ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [OverlordSupervisorPid], _Options=[]).
+start_link(SpongeSupervisorPid) ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [SpongeSupervisorPid], _Options=[]).
 
 stop() ->
   gen_server:call(?SERVER,stop,?DEFAULT_TIMEOUT).
@@ -42,6 +48,12 @@ process_info() ->
 minion_info() ->
   gen_server:call(?SERVER,minion_info,?DEFAULT_TIMEOUT).
 
+minion_crash() ->
+  gen_server:call(?SERVER,minion_crash,?DEFAULT_TIMEOUT).
+
+minion_exit(Reason) ->
+  gen_server:call(?SERVER,{minion_exit, Reason},?DEFAULT_TIMEOUT).
+
 sing() ->
   gen_server:call(?SERVER,sing,?DEFAULT_TIMEOUT).
 
@@ -52,8 +64,9 @@ send(Message) ->
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
-init([OverlordSupervisorPid]) ->
-  self() ! {start_minion_supervisor, OverlordSupervisorPid},
+init([SpongeSupervisorPid]) ->
+  self() ! {start_minion_supervisor, SpongeSupervisorPid},
+  log("The hypnosponge has been started on ~p with pid ~p~n",[node(), self()]),
   {ok, #state{}}.
 
 handle_call(minion_pids, _From, State) ->
@@ -73,41 +86,53 @@ handle_call(minion_info, _From, State) ->
   ok = minion_message(minion_info, State),
   {reply,ok,State};
 
+handle_call(minion_crash, _From, State) ->
+  ok = minion_message(crash_you_worthless_fool, State),
+  {reply,havoc_caused,State};
+
+handle_call({minion_exit, Reason}, _From, State) ->
+  ok = minion_message({exit, Reason}, State),
+  {reply,exit_command_givenState};
+
 handle_call({send, Message}, _From, State) ->
   ok = minion_message(Message, State),
   {reply,ok,State};
 
 handle_call(stop, _From, State) ->
-  io:format("[~p] stop ~p~n",[?MODULE, _From]),
+  log("stop ~p~n",[_From]),
   {stop,normal,State}.
 
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
-handle_info({start_minion_supervisor, OverlordSupervisorPid}, State = #state{}) ->
+handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
   MinionSupSpec = {minion_sup,
                    {minion_sup, start_link, [self()]},
-                   temporary,
+                   permanent,
                    10000,
                    supervisor,
                    [minion_sup]},
-  {ok, MinionSupPid} = supervisor:start_child(OverlordSupervisorPid, MinionSupSpec),
+  {ok, MinionSupPid} = supervisor:start_child(SpongeSupervisorPid, MinionSupSpec),
+  log("The minion supervisor has been started on ~p with pid ~p (attached to sponge supervisor ~p)~n",
+      [node(), MinionSupPid, SpongeSupervisorPid]),
+  log("hypnosponge_sup (~p) now has these children: ~p~n",
+      [SpongeSupervisorPid, supervisor:which_children(SpongeSupervisorPid)]),
   link(MinionSupPid),
 
   NewState = enslave_nodes(State#state{minion_supervisor=MinionSupPid}),
   {noreply, NewState};
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
-  io:format("[~p] ~p ~p 'DOWN', Reason: ~p\n",[?MODULE, Pid, _Ref, _Reason]),
+  log("~p ~p 'DOWN', Reason: ~p\n",[Pid, _Ref, _Reason]),
   Pids = State#state.minions,
   NewPids = Pids -- [Pid],
   NewState = #state{minions=NewPids},
   {noreply, NewState};
 handle_info(_Info, State) ->
-  io:format("[~p] handle_info ~p~n",[?MODULE, _Info]),
+  log("Unexpected handle_info message: ~p~n",[_Info]),
   {noreply, State}.
 
 terminate(_Reason, _State) ->
-  io:format("[~p] terminate ~p~n",[?MODULE, _Reason]),
+  log("terminate Reason: ~p~n",[_Reason]),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -128,18 +153,21 @@ enslave_nodes(Nodes, MinionSupPid) ->
   [enslave_node(Node, MinionSupPid) || Node <- Nodes].
 
 enslave_node(Node, MinionSupPid) ->
-  io:format("[~p] Enslaving Node ~p ...~n",[?MODULE, Node]),
+  log("Enslaving Node ~p ...~n",[Node]),
   darklord_utils:load_code(Node),
   StartChildReturn = supervisor:start_child(MinionSupPid, [Node]),
   Minion = case StartChildReturn of
              {ok, Pid} when is_pid(Pid) ->
                Pid;
              {error, Pid} when is_pid(Pid)  ->
-               io:format("[~p] start_child returned error after spawning successfully. WHY??????~n",[?MODULE]),
+               log("supervisor:start_child(~p, [~p]) returned {error, ~p} after spawning successfully. WHY??????~n",
+                   [MinionSupPid, Node, Pid]),
                Pid
            end,
   _Ref = erlang:monitor(process, Minion),
-  io:format("Enslaved ~p on node ~p~n",[Minion, Node]),
+  log("Enslaved ~p on node ~p~n",[Minion, Node]),
+  log("minion_sup (~p) now has these children: ~p~n",
+      [MinionSupPid, supervisor:which_children(MinionSupPid)]),
   Minion.
 
 minion_message(Message, State) ->
@@ -148,3 +176,6 @@ minion_message(Message, State) ->
                    Pid ! Message
                end,
   lists:foreach(MessageFun, MinionPids).
+
+log(String, Params) ->
+  darklord_utils:log(?MODULE, String, Params).

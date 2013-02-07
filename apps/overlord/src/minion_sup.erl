@@ -27,12 +27,12 @@ start_link(HypnoSpongePid) ->
 
 init([HypnoSpongePid]) ->
   RestartStrategy = simple_one_for_one,
-  MaxRestarts = 5,
-  MaxSecondsBetweenRestarts = 3600,
+  MaxRestarts = 10,
+  MaxSecondsBetweenRestarts = 3,
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-  Restart = temporary,
+  Restart = permanent,
   Shutdown = 5000,
   Type = worker,
 

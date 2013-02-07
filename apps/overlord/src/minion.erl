@@ -19,9 +19,7 @@ aye_dark_overlord(HypnoSpongePid) ->
   %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
   _Ref = erlang:monitor(process, HypnoSpongePid),
 
-  Text = lists:flatten(io_lib:format("~p (~p) Aye, Dark Overlord who lives at ~p~n",[node(), self(), HypnoSpongePid])),
-  io:format(Text),
-  erlang:display_string(Text),
+  log("~p (~p) Aye, Dark Overlord who lives at ~p~n", [node(), self(), HypnoSpongePid]),
   random:seed(now()),
   minion_wait(HypnoSpongePid).
 
@@ -38,6 +36,11 @@ minion_message_handler(_Message=minion_info, HypnoSpongePid) ->
   Info = minion_info(),
   HypnoSpongePid ! Info,
   minion_wait(HypnoSpongePid);
+minion_message_handler(_Message=crash_you_worthless_fool, HypnoSpongePid) ->
+  %% Cause a badmatch
+  HypnoSpongePid = yes_master_my_life_is_in_your_hands;
+minion_message_handler(_Message={exit, Reason}, _HypnoSpongePid) ->
+  erlang:exit(Reason);
 minion_message_handler(_Message=sing, HypnoSpongePid) ->
   sing(),
   minion_wait(HypnoSpongePid);
@@ -96,3 +99,6 @@ minion_info() ->
   OTPVersion = erlang:system_info(otp_release),
   OS = os:type(),
   {node(), self(), OTPVersion, OS}.
+
+log(String, Params) ->
+  darklord_utils:log(?MODULE, String, Params).
