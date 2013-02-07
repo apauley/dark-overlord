@@ -53,7 +53,6 @@ send(Message) ->
 %% ------------------------------------------------------------------
 
 init([OverlordSupervisorPid]) ->
-  darklord_utils:code_loads(),
   self() ! {start_minion_supervisor, OverlordSupervisorPid},
   {ok, #state{}}.
 
@@ -119,7 +118,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 
 call(CallName) ->
-  %% darklord_utils:code_loads(),
   gen_server:call(?SERVER,CallName,?DEFAULT_TIMEOUT).
 
 enslave_nodes(State = #state{minion_supervisor=MinionSupPid}) ->
@@ -134,6 +132,7 @@ enslave_nodes(Nodes, MinionSupPid) ->
 
 enslave_node(Node, MinionSupPid) ->
   io:format("[~p] Enslaving Node ~p ...~n",[?MODULE, Node]),
+  darklord_utils:load_code(Node),
   StartChildReturn = supervisor:start_child(MinionSupPid, [Node]),
   Minion = case StartChildReturn of
              {ok, Pid} when is_pid(Pid) ->

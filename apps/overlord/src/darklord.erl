@@ -21,4 +21,4 @@ sing() ->
   darklord_utils:multicall(sing, [Lines]).
 
 nl() ->
-  darklord_utils:code_loads().
+  darklord_utils:load_code().
