@@ -46,12 +46,11 @@ minion_message_handler(_Message=sing, HypnoSpongePid) ->
   minion_wait(HypnoSpongePid);
 minion_message_handler(_Message={'DOWN', _Ref, process, DownMasterPid, _Reason}, _MasterPid) ->
   %% If my parent dies, I too see no reason to live.
-  SuicideNote = lists:flatten(io_lib:format("~p ~p My master (~p) died of reason '~p' ;-(. I too see no reason to live...~n",
-                                            [node(), self(), DownMasterPid, _Reason])),
-  erlang:display_string(SuicideNote),
+  log("~p ~p My master (~p) died of reason '~p' ;-(. I too see no reason to live...~n",
+                                            [node(), self(), DownMasterPid, _Reason]),
   erlang:exit(shutdown);
 minion_message_handler(Message, HypnoSpongePid) ->
-  io:format("[~p] ~p ~p unknown message: ~p~n",[?MODULE, node(), self(), Message]),
+  log("~p ~p unknown message: ~p~n",[node(), self(), Message]),
   HypnoSpongePid ! {unknown_message, Message, minion_info()},
   minion_wait(HypnoSpongePid).
 
