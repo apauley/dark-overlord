@@ -33,8 +33,16 @@ load_code(Module, Node) ->
   rpc:call(Node, code, load_binary, [Module, Filename, Binary]).
 
 log(Module, String, Params) ->
-  log("[~p] "++String, [Module|Params]).
+  log("~s [~p] "++String, [timestamp(), Module|Params]).
 
 log(String, Params) ->
   Text = lists:flatten(io_lib:format(String, Params)),
   erlang:display_string(Text).
+
+timestamp() ->
+  timestamp(os:timestamp()).
+
+timestamp(Now) ->
+  {_,{HH,NN,SS}} = calendar:now_to_local_time(Now),
+  {_,_,XX} = Now,
+  lists:flatten(io_lib:format("~2..0w:~2..0w:~2..0w.~3..0s", [HH,NN,SS,integer_to_list(XX)])).
