@@ -1,6 +1,6 @@
-%% The hypno-sponge is used for Minion Mind Control (MMC).
+%% The hypnosponge is used for Minion Mind Control (MMC).
 
--module(sponge).
+-module(hypnosponge).
 -behaviour(gen_server).
 -define(SERVER, ?MODULE).
 -define(DEFAULT_TIMEOUT, 5000).

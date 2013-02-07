@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-  overlord_sup:start_link().
+  hypnosponge_sup:start_link().
 
 stop(_State) ->
   ok.

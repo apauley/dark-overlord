@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% @author Andreas Pauley <>
 %%%-------------------------------------------------------------------
--module(overlord_sup).
+-module(hypnosponge_sup).
 
 -behaviour(supervisor).
 
@@ -36,7 +36,7 @@ init([]) ->
   Shutdown = 5000,
   Type = worker,
 
-  AChild = {sponge, {sponge, start_link, [self()]},
-            Restart, Shutdown, Type, [sponge]},
+  AChild = {hypnosponge, {hypnosponge, start_link, [self()]},
+            Restart, Shutdown, Type, [hypnosponge]},
 
   {ok, {SupFlags, [AChild]}}.
