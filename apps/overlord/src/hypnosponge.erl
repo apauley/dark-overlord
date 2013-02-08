@@ -106,14 +106,14 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
-  MinionSupSpec = {minion_sup,
-                   {minion_sup, start_link, [self()]},
+  MinionSupSpec = {minion_supersup,
+                   {minion_supersup, start_link, [self()]},
                    permanent,
                    10000,
                    supervisor,
-                   [minion_sup]},
+                   [minion_supersup]},
   {ok, MinionSupPid} = supervisor:start_child(SpongeSupervisorPid, MinionSupSpec),
-  log("The minion supervisor has been started on ~p with pid ~p (attached to sponge supervisor ~p)~n",
+  log("The minion supersup has been started on ~p with pid ~p (attached to sponge supervisor ~p)~n",
       [node(), MinionSupPid, SpongeSupervisorPid]),
   log("hypnosponge_sup (~p) now has these children: ~p~n",
       [SpongeSupervisorPid, supervisor:which_children(SpongeSupervisorPid)]),
@@ -158,7 +158,7 @@ enslave_node(Node, MinionSupPid) ->
   {ok, Minion} = supervisor:start_child(MinionSupPid, [Node]),
   _Ref = erlang:monitor(process, Minion),
   log("Enslaved ~p on node ~p~n",[Minion, Node]),
-  log("minion_sup (~p) now has these children: ~p~n",
+  log("minion_supersup (~p) now has these children: ~p~n",
       [MinionSupPid, supervisor:which_children(MinionSupPid)]),
   Minion.
 
