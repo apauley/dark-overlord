@@ -78,11 +78,11 @@ init([SpongeSupervisorPid]) ->
   {ok, #state{}}.
 
 handle_call(minion_pids, _From, State) ->
-  Pids = State#state.minions,
+  Pids = minions(State),
   {reply,{ok, Pids},State};
 
 handle_call(process_info, _From, State) ->
-  Pids = State#state.minions,
+  Pids = minions(State),
   Info = [erlang:process_info(Pid) || Pid <- Pids],
   {reply,{ok, Info},State};
 
@@ -133,25 +133,36 @@ handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
                    10000,
                    supervisor,
                    [minion_supersup]},
-  MinionSupPid = case supervisor:start_child(SpongeSupervisorPid, MinionSupSpec) of
-                   {ok, Pid}                        when is_pid(Pid) -> Pid;
-                   {ok, Pid, _Info}                 when is_pid(Pid) -> Pid;
-                   {error, {already_started, Pid}}  when is_pid(Pid) -> Pid;
-                   {error, Pid}                     when is_pid(Pid) -> Pid
-                 end,
+  MinionSuperSupPid = case supervisor:start_child(SpongeSupervisorPid, MinionSupSpec) of
+                        {ok, Pid}                        when is_pid(Pid) -> Pid;
+                        {ok, Pid, _Info}                 when is_pid(Pid) -> Pid;
+                        {error, {already_started, Pid}}  when is_pid(Pid) -> Pid;
+                        {error, Pid}                     when is_pid(Pid) -> Pid
+                      end,
   log("The minion supersup (~p) has been attached to hypnosponge_sup (~p)~n",
-      [MinionSupPid, SpongeSupervisorPid]),
+      [MinionSuperSupPid, SpongeSupervisorPid]),
   
   log_children(SpongeSupervisorPid, hypnosponge_sup),
-  link(MinionSupPid),
+  link(MinionSuperSupPid),
 
-  NewState = enslave_nodes(State#state{minion_supervisor=MinionSupPid}),
+  NewState = enslave_nodes(State#state{minion_supervisor=MinionSuperSupPid}),
   {noreply, NewState};
+
+handle_info({aye_dark_overlord, Minion, Node}, State = #state{}) ->
+  _Ref = erlang:monitor(process, Minion),
+  log("Minion ~p reporting for duty~n", [Minion]),
+  NewState = add_minion(Minion, Node, State),
+  {noreply, NewState};
+
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
   log("~p ~p 'DOWN', Reason: ~p\n",[Pid, _Ref, _Reason]),
-  Pids = State#state.minions,
-  NewPids = Pids -- [Pid],
-  NewState = #state{minions=NewPids},
+  
+  NewState = case lists:member(Pid, minions(State)) of
+               true ->
+                 remove_minion(Pid, State);
+               false ->
+                 State
+             end,
   {noreply, NewState};
 handle_info(_Info, State) ->
   log("Unexpected handle_info message: ~p~n",[_Info]),
@@ -168,28 +179,38 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-enslave_nodes(State = #state{minion_supervisor=MinionSupPid}) ->
-  Minions = enslave_nodes(MinionSupPid),
-  NewState = State#state{minions=Minions},
-  NewState;
-enslave_nodes(MinionSupPid) when is_pid(MinionSupPid) ->
-  enslave_nodes(nodes(), MinionSupPid).
+enslave_nodes(State = #state{minion_supervisor=MinionSuperSupPid}) ->
+  _MinionSups = enslave_nodes(MinionSuperSupPid),
+  State;
+enslave_nodes(MinionSuperSupPid) when is_pid(MinionSuperSupPid) ->
+  enslave_nodes(nodes(), MinionSuperSupPid).
 
-enslave_nodes(Nodes, MinionSupPid) ->
-  [enslave_node(Node, MinionSupPid) || Node <- Nodes].
+enslave_nodes(Nodes, MinionSuperSupPid) ->
+  [enslave_node(Node, MinionSuperSupPid) || Node <- Nodes].
 
-enslave_node(Node, MinionSupPid) ->
+enslave_node(Node, MinionSuperSupPid) ->
   log("Enslaving Node ~p ...~n",[Node]),
   darklord_utils:load_code(Node),
-  {ok, Minion} = supervisor:start_child(MinionSupPid, [self(), Node]),
-  _Ref = erlang:monitor(process, Minion),
-  log("Enslaved ~p on node ~p~n",[Minion, Node]),
+  {ok, MinionSup} = supervisor:start_child(MinionSuperSupPid, [self(), Node]),
+
+  log("Enslaved minion sup ~p on node ~p~n",[MinionSup, Node]),
   
-  log_children(MinionSupPid, minion_supersup),
-  Minion.
+  log_children(MinionSuperSupPid, minion_supersup),
+  MinionSup.
+
+minions(State) ->
+  State#state.minions.
+
+add_minion(Minion, _Node, State) ->
+  Minions = [Minion|minions(State)],
+  State#state{minions=Minions}.
+
+remove_minion(Minion, State) ->
+  Minions = minions(State) -- [Minion],
+  State#state{minions=Minions}.
 
 minion_message(Message, State) ->
-  MinionPids = State#state.minions,
+  MinionPids = minions(State),
   MessageFun = fun(Pid) ->
                    Pid ! Message
                end,

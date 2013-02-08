@@ -66,7 +66,7 @@ minion_info() ->
 
 report_for_duty(HypnoSpongePid) ->
   log("Aye, Dark Overlord whith PID ~p~n", [HypnoSpongePid]),
-  HypnoSpongePid ! {aye_dark_overlord, self()},
+  HypnoSpongePid ! {aye_dark_overlord, self(), node()},
   ok.
 
 minion_wait(HypnoSpongePid) ->
