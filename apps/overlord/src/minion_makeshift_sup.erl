@@ -21,6 +21,9 @@ init({HypnoSpongePid, HypnoSpongeNode}) ->
   process_flag(trap_exit, true),
   log("minion sup for ~p on ~s~n", [HypnoSpongePid, atom_to_list(HypnoSpongeNode)]),
 
+  %% By Overlord decree, in the unlikely event that a hypnosponge dies, all minions must commit suicide out of respect.
+  _Ref = erlang:monitor(process, HypnoSpongePid),
+
   State1 = #state{sponge_pid=HypnoSpongePid,
                   sponge_node=HypnoSpongeNode},
   State2 = start_ping_server(State1),
@@ -36,10 +39,12 @@ supervisor_wait(State) ->
       supervisor_wait(State)
   end.
 
-handle_message(_Message={exit, Reason}, State) ->
-  log("handle_message unknown exit received. Reason: ~p~n", [Reason]),
-  NewState = start_minion(State),
-  supervisor_wait(NewState);
+handle_message(_Message={'DOWN', _Ref, process, Sponge, Reason}, #state{sponge_pid=Sponge}) ->
+  log("My sponge (~p) died of reason '~p' ;-(. I too see no reason to live...~n",
+      [Sponge, Reason]),
+
+  %% I'm linked to my minion, we both die
+  erlang:exit(shutdown);
 handle_message(Message, State) ->
   log("handle_message unknown message received: ~p~n", [Message]),
   supervisor_wait(State).

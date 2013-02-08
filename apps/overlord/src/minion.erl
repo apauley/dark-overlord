@@ -22,9 +22,6 @@ start_link(HypnoSpongePid) ->
   {ok, Pid}.
 
 init(HypnoSpongePid) ->
-  %% By Overlord decree, in the unlikely event that a hypnosponge dies, all minions must commit suicide out of respect.
-  _Ref = erlang:monitor(process, HypnoSpongePid),
-
   ok = report_for_duty(HypnoSpongePid),
 
   random:seed(now()),
@@ -73,29 +70,24 @@ minion_wait(HypnoSpongePid) ->
   random_deranged_laugh(),
   receive
     Message ->
-      minion_message_handler(Message, HypnoSpongePid)
+      handle_message(Message, HypnoSpongePid)
   after 5 ->
       minion_wait(HypnoSpongePid)
   end.
 
-minion_message_handler(_Message=minion_info, HypnoSpongePid) ->
+handle_message(_Message=minion_info, HypnoSpongePid) ->
   Info = minion_info(),
   HypnoSpongePid ! Info,
   minion_wait(HypnoSpongePid);
-minion_message_handler(_Message=crash_you_worthless_fool, HypnoSpongePid) ->
+handle_message(_Message=crash_you_worthless_fool, HypnoSpongePid) ->
   %% Cause a badmatch
   HypnoSpongePid = yes_master_my_life_is_in_your_hands;
-minion_message_handler(_Message={exit, Reason}, _HypnoSpongePid) ->
+handle_message(_Message={exit, Reason}, _HypnoSpongePid) ->
   erlang:exit(Reason);
-minion_message_handler(_Message=sing, HypnoSpongePid) ->
+handle_message(_Message=sing, HypnoSpongePid) ->
   sing(),
   minion_wait(HypnoSpongePid);
-minion_message_handler(_Message={'DOWN', _Ref, process, DownPid, _Reason}, _HypnoSpongePid) ->
-  %% If my parent dies, I too see no reason to live.
-  log("My sponge (~p) died of reason '~p' ;-(. I too see no reason to live...~n",
-      [DownPid, _Reason]),
-  erlang:exit(shutdown);
-minion_message_handler(Message, HypnoSpongePid) ->
+handle_message(Message, HypnoSpongePid) ->
   log("~p ~p unknown message: ~p~n",[node(), self(), Message]),
   HypnoSpongePid ! {unknown_message, Message, minion_info()},
   minion_wait(HypnoSpongePid).
