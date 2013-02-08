@@ -45,6 +45,13 @@ handle_message(_Message={'DOWN', _Ref, process, Sponge, Reason}, #state{sponge_p
 
   %% I'm linked to my minion, we both die
   erlang:exit(shutdown);
+
+handle_message(_Message={'EXIT', Minion, Reason}, State = #state{minion=Minion}) ->
+  log("My minion (~p) died of reason '~p'. Respawning the lazy bugger.~n",
+      [Minion, Reason]),
+  NewState = start_minion(State),
+  supervisor_wait(NewState);
+
 handle_message(Message, State) ->
   log("handle_message unknown message received: ~p~n", [Message]),
   supervisor_wait(State).
