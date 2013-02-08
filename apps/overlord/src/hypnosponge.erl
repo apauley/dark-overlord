@@ -74,7 +74,7 @@ send(Message) ->
 
 init([SpongeSupervisorPid]) ->
   self() ! {start_minion_supervisor, SpongeSupervisorPid},
-  log("The hypnosponge has been started on ~p with pid ~p~n",[node(), self()]),
+  log("Hello from the hypnosponge itself!~n",[]),
   {ok, #state{}}.
 
 handle_call(minion_pids, _From, State) ->
@@ -139,10 +139,10 @@ handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
                    {error, {already_started, Pid}}  when is_pid(Pid) -> Pid;
                    {error, Pid}                     when is_pid(Pid) -> Pid
                  end,
-  log("The minion supersup has been started on ~p with pid ~p (attached to sponge supervisor ~p)~n",
-      [node(), MinionSupPid, SpongeSupervisorPid]),
-  log("hypnosponge_sup (~p) now has these children: ~p~n",
-      [SpongeSupervisorPid, supervisor:which_children(SpongeSupervisorPid)]),
+  log("The minion supersup (~p) has been attached to hypnosponge_sup (~p)~n",
+      [MinionSupPid, SpongeSupervisorPid]),
+  
+  log_children(SpongeSupervisorPid, hypnosponge_sup),
   link(MinionSupPid),
 
   NewState = enslave_nodes(State#state{minion_supervisor=MinionSupPid}),
@@ -184,8 +184,8 @@ enslave_node(Node, MinionSupPid) ->
   {ok, Minion} = supervisor:start_child(MinionSupPid, [self(), Node]),
   _Ref = erlang:monitor(process, Minion),
   log("Enslaved ~p on node ~p~n",[Minion, Node]),
-  log("minion_supersup (~p) now has these children: ~p~n",
-      [MinionSupPid, supervisor:which_children(MinionSupPid)]),
+  
+  log_children(MinionSupPid, minion_supersup),
   Minion.
 
 minion_message(Message, State) ->
@@ -197,3 +197,8 @@ minion_message(Message, State) ->
 
 log(String, Params) ->
   darklord_utils:log(?MODULE, String, Params).
+
+log_children(SupPid, SupName) ->
+  Children = supervisor:which_children(SupPid),
+  log("~p (~p) now has ~p children: ~p~n",
+      [SupName, SupPid, length(Children), Children]).

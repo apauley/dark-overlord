@@ -39,8 +39,7 @@ init([]) ->
   AChild = {hypnosponge, {hypnosponge, start_link, [self()]},
             Restart, Shutdown, Type, [hypnosponge]},
 
-  log("The hypnosponge supervisor has been started on ~p with pid ~p~n",
-      [node(), self()]),
+  log("Hello from the hypnosponge supervisor~n", []),
   {ok, {SupFlags, [AChild]}}.
 
 log(String, Params) ->

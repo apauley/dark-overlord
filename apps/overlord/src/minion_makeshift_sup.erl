@@ -19,13 +19,14 @@ start_link(HypnoSpongePid, RemoteNode) ->
 
 init({HypnoSpongePid, HypnoSpongeNode}) ->
   process_flag(trap_exit, true),
-  log("init/1 minion for overlord who lives at ~s (~p)~n", [atom_to_list(HypnoSpongeNode), HypnoSpongePid]),
+  log("minion sup for ~p on ~s~n", [HypnoSpongePid, atom_to_list(HypnoSpongeNode)]),
 
-  State = start_ping_server(#state{sponge_pid=HypnoSpongePid,
-                                   sponge_node=HypnoSpongeNode}),
+  State1 = #state{sponge_pid=HypnoSpongePid,
+                  sponge_node=HypnoSpongeNode},
+  State2 = start_ping_server(State1),
 
-  NewState = start_minion(State),
-  supervisor_wait(NewState).
+  State3 = start_minion(State2),
+  supervisor_wait(State3).
 
 supervisor_wait(State) ->
   receive
@@ -43,8 +44,8 @@ handle_message(Message, State) ->
   log("handle_message unknown message received: ~p~n", [Message]),
   supervisor_wait(State).
 
-start_minion(State = #state{sponge_pid=HypnoSpongePid, sponge_node=HypnoSpongeNode}) ->
-  {ok, Minion} = minion:start_link(HypnoSpongePid, HypnoSpongeNode),
+start_minion(State = #state{sponge_pid=HypnoSpongePid}) ->
+  {ok, Minion} = minion:start_link(HypnoSpongePid),
   State#state{minion=Minion}.
 
 start_ping_server(State = #state{sponge_node=HypnoSpongeNode}) ->
@@ -52,7 +53,7 @@ start_ping_server(State = #state{sponge_node=HypnoSpongeNode}) ->
   State#state{ping_server=PingPid}.
 
 ping_server(Node) ->
-  log("ping_server started that pings ~p~n", [Node]),
+  log("ping_server started in order to ping ~p~n", [Node]),
   ping_loop(Node).
 
 ping_loop(Node) ->

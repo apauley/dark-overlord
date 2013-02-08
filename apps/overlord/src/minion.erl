@@ -4,7 +4,7 @@
 
 -module(minion).
 
--export([start_link/2,
+-export([start_link/1,
          init/1]).
 
 %% These exports are for direct minion commands
@@ -17,15 +17,16 @@
 %% Startup Functions
 %% ------------------------------------------------------------------
 
-start_link(HypnoSpongePid, HypnoSpongeNode) ->
-  Pid = proc_lib:spawn_link(?MODULE, init, [{HypnoSpongePid, HypnoSpongeNode}]),
+start_link(HypnoSpongePid) ->
+  Pid = proc_lib:spawn_link(?MODULE, init, [HypnoSpongePid]),
   {ok, Pid}.
 
-init({HypnoSpongePid, HypnoSpongeNode}) ->
-  %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
+init(HypnoSpongePid) ->
+  %% By Overlord decree, in the unlikely event that a hypnosponge dies, all minions must commit suicide out of respect.
   _Ref = erlang:monitor(process, HypnoSpongePid),
 
-  log("Aye, Dark Overlord who lives at ~s (~p)~n", [atom_to_list(HypnoSpongeNode), HypnoSpongePid]),
+  ok = report_for_duty(HypnoSpongePid),
+
   random:seed(now()),
   minion_wait(HypnoSpongePid).
 
@@ -62,6 +63,11 @@ minion_info() ->
 %% ------------------------------------------------------------------
 %% Internal Functions
 %% ------------------------------------------------------------------
+
+report_for_duty(HypnoSpongePid) ->
+  log("Aye, Dark Overlord whith PID ~p~n", [HypnoSpongePid]),
+  HypnoSpongePid ! {aye_dark_overlord, self()},
+  ok.
 
 minion_wait(HypnoSpongePid) ->
   random_deranged_laugh(),

@@ -39,9 +39,8 @@ init([]) ->
   Child = {minion_makeshift_sup,
            {minion_makeshift_sup, start_link, []},
            Restart, Shutdown, Type, [minion_makeshift_sup]},
-  log("The minion supervisor has been started on ~p with pid ~p~n",
-      [node(), self()]),
 
+  log("Hello from the minion supersup~n", []),
   {ok, {SupFlags, [Child]}}.
 
 log(String, Params) ->

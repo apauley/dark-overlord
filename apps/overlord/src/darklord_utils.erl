@@ -34,7 +34,7 @@ load_code(Module, Node) ->
 
 log(Module, String, Params) ->
   Node = atom_to_list(node()),
-  log("~s [~p] ~s ~p "++String, [timestamp(), Module, Node, self()|Params]).
+  log("~s ~s [~p] ~p "++String, [timestamp(), Node, Module, self()|Params]).
 
 log(String, Params) ->
   Text = lists:flatten(io_lib:format(String, Params)),
