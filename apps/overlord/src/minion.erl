@@ -14,10 +14,12 @@
 -define(DERANGEDLAUGH_RANDOM_MAX, 15000).
 
 start_link(HypnoSpongePid, Node) ->
-  proc_lib:spawn_link(Node, ?MODULE, init, [HypnoSpongePid]).
+  Pid = proc_lib:spawn_link(Node, ?MODULE, init, [HypnoSpongePid]),
+  {ok, Pid}.
 
 start(HypnoSpongePid, Node) ->
-  proc_lib:spawn(Node, ?MODULE, init, [HypnoSpongePid]).
+  Pid = proc_lib:spawn(Node, ?MODULE, init, [HypnoSpongePid]),
+  {ok, Pid}.
 
 init(HypnoSpongePid) ->
   %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
