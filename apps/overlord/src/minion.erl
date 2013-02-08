@@ -4,11 +4,8 @@
 
 -module(minion).
 
--export([start/2,
-         start_link/2,
+-export([start_link/2,
          init/1]).
-
--export([ping_loop/1]).
 
 %% These exports are for direct minion commands
 -export([sing/0, sing/1, minion_info/0]).
@@ -20,27 +17,17 @@
 %% Startup Functions
 %% ------------------------------------------------------------------
 
-start_link(HypnoSpongePid, RemoteNode) ->
-  Pid = proc_lib:spawn_link(RemoteNode, ?MODULE, init, [{HypnoSpongePid, node()}]),
-  {ok, Pid}.
-
-start(HypnoSpongePid, RemoteNode) ->
-  Pid = proc_lib:spawn(RemoteNode, ?MODULE, init, [{HypnoSpongePid, node()}]),
+start_link(HypnoSpongePid, HypnoSpongeNode) ->
+  Pid = proc_lib:spawn_link(?MODULE, init, [{HypnoSpongePid, HypnoSpongeNode}]),
   {ok, Pid}.
 
 init({HypnoSpongePid, HypnoSpongeNode}) ->
   %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
   _Ref = erlang:monitor(process, HypnoSpongePid),
-  _PingPid = proc_lib:spawn(?MODULE, ping_loop, [HypnoSpongeNode]),
 
   log("Aye, Dark Overlord who lives at ~s (~p)~n", [atom_to_list(HypnoSpongeNode), HypnoSpongePid]),
   random:seed(now()),
   minion_wait(HypnoSpongePid).
-
-ping_loop(Node) ->
-  _PingPang = net_adm:ping(Node),
-  timer:sleep(1000),
-  ping_loop(Node).
 
 %% ------------------------------------------------------------------
 %% API Functions

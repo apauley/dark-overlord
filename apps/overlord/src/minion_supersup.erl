@@ -36,12 +36,13 @@ init([]) ->
   Shutdown = 5000,
   Type = worker,
 
-  AChild = {minion, {minion, start_link, []},
-            Restart, Shutdown, Type, [minion]},
+  Child = {minion_makeshift_sup,
+           {minion_makeshift_sup, start_link, []},
+           Restart, Shutdown, Type, [minion_makeshift_sup]},
   log("The minion supervisor has been started on ~p with pid ~p~n",
       [node(), self()]),
 
-  {ok, {SupFlags, [AChild]}}.
+  {ok, {SupFlags, [Child]}}.
 
 log(String, Params) ->
   darklord_utils:log(?MODULE, String, Params).

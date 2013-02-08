@@ -25,7 +25,7 @@ load_code() ->
   [load_code(Node) || Node <- nodes()].
 
 load_code(Node) ->
-  ModulesToLoad = [?MODULE, minion],
+  ModulesToLoad = [?MODULE, minion_makeshift_sup, minion],
   [load_code(Module, Node) || Module <- ModulesToLoad].
 
 load_code(Module, Node) ->
