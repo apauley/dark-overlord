@@ -52,6 +52,12 @@ handle_message(_Message={'EXIT', Minion, Reason}, State = #state{minion=Minion})
   NewState = start_minion(State),
   supervisor_wait(NewState);
 
+handle_message(_Message={'EXIT', MinionSuperSup, shutdown}, #state{}) ->
+  log("Received shutdown from my supersup ~p. Goodbye world :-(~n",
+      [MinionSuperSup]),
+  %% I'm linked to my minion, we both die
+  erlang:exit(shutdown);
+
 handle_message(Message, State) ->
   log("handle_message unknown message received: ~p~n", [Message]),
   supervisor_wait(State).
