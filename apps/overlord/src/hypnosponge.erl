@@ -155,15 +155,7 @@ enslave_nodes(Nodes, MinionSupPid) ->
 enslave_node(Node, MinionSupPid) ->
   log("Enslaving Node ~p ...~n",[Node]),
   darklord_utils:load_code(Node),
-  StartChildReturn = supervisor:start_child(MinionSupPid, [Node]),
-  Minion = case StartChildReturn of
-             {ok, Pid} when is_pid(Pid) ->
-               Pid;
-             {error, Pid} when is_pid(Pid)  ->
-               log("supervisor:start_child(~p, [~p]) returned {error, ~p} after spawning successfully. WHY??????~n",
-                   [MinionSupPid, Node, Pid]),
-               Pid
-           end,
+  Minion = minion:start(self(), Node),
   _Ref = erlang:monitor(process, Minion),
   log("Enslaved ~p on node ~p~n",[Minion, Node]),
   log("minion_sup (~p) now has these children: ~p~n",

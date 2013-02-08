@@ -38,5 +38,10 @@ init([HypnoSpongePid]) ->
 
   AChild = {minion, {minion, start_link, [HypnoSpongePid]},
             Restart, Shutdown, Type, [minion]},
+  log("The minion supervisor has been started on ~p with pid ~p~n",
+      [node(), self()]),
 
   {ok, {SupFlags, [AChild]}}.
+
+log(String, Params) ->
+  darklord_utils:log(?MODULE, String, Params).

@@ -33,7 +33,7 @@ load_code(Module, Node) ->
   rpc:call(Node, code, load_binary, [Module, Filename, Binary]).
 
 log(Module, String, Params) ->
-  log("~s [~p] "++String, [timestamp(), Module|Params]).
+  log("~s ~p [~p] "++String, [timestamp(), node(), Module|Params]).
 
 log(String, Params) ->
   Text = lists:flatten(io_lib:format(String, Params)),

@@ -4,8 +4,9 @@
 
 -module(minion).
 
-%% This function is used to spawn a minion
--export([start_link/2, aye_dark_overlord/1]).
+-export([start/2,
+         start_link/2,
+         init/1]).
 
 %% These exports are for direct minion commands
 -export([sing/0, sing/1, minion_info/0]).
@@ -13,9 +14,12 @@
 -define(DERANGEDLAUGH_RANDOM_MAX, 15000).
 
 start_link(HypnoSpongePid, Node) ->
-  proc_lib:spawn_link(Node, ?MODULE, aye_dark_overlord, [HypnoSpongePid]).
+  proc_lib:spawn_link(Node, ?MODULE, init, [HypnoSpongePid]).
 
-aye_dark_overlord(HypnoSpongePid) ->
+start(HypnoSpongePid, Node) ->
+  proc_lib:spawn(Node, ?MODULE, init, [HypnoSpongePid]).
+
+init(HypnoSpongePid) ->
   %% By Overlord decree, in the unlikely event that a master dies, all minions must commit suicide out of respect.
   _Ref = erlang:monitor(process, HypnoSpongePid),
 
