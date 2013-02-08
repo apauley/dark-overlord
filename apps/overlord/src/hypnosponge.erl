@@ -19,6 +19,8 @@
          minion_info/0,
          minion_crash/0,
          minion_exit/1,
+         sponge_crash/0,
+         sponge_exit/1,
          sing/0,
          send/1]).
 
@@ -53,6 +55,12 @@ minion_crash() ->
 
 minion_exit(Reason) ->
   gen_server:call(?SERVER,{minion_exit, Reason},?DEFAULT_TIMEOUT).
+
+sponge_crash() ->
+  gen_server:call(?SERVER,sponge_crash,?DEFAULT_TIMEOUT).
+
+sponge_exit(Reason) ->
+  gen_server:call(?SERVER,{sponge_exit, Reason},?DEFAULT_TIMEOUT).
 
 sing() ->
   gen_server:call(?SERVER,sing,?DEFAULT_TIMEOUT).
@@ -92,7 +100,20 @@ handle_call(minion_crash, _From, State) ->
 
 handle_call({minion_exit, Reason}, _From, State) ->
   ok = minion_message({exit, Reason}, State),
-  {reply,exit_command_givenState};
+  {reply,exit_command_given,State};
+
+handle_call(sponge_crash, From, State) ->
+  gen_server:reply(From, ouch_i_cant_look),
+
+  %% Cause badmatch
+  State = boomcrash,
+  {noreply,State};
+
+handle_call({sponge_exit, Reason}, From, State) ->
+  gen_server:reply(From, byebye),
+
+  erlang:exit(Reason),
+  {noreply,State};
 
 handle_call({send, Message}, _From, State) ->
   ok = minion_message(Message, State),
@@ -107,12 +128,17 @@ handle_cast(_Msg, State) ->
 
 handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
   MinionSupSpec = {minion_supersup,
-                   {minion_supersup, start_link, [self()]},
+                   {minion_supersup, start_link, []},
                    permanent,
                    10000,
                    supervisor,
                    [minion_supersup]},
-  {ok, MinionSupPid} = supervisor:start_child(SpongeSupervisorPid, MinionSupSpec),
+  MinionSupPid = case supervisor:start_child(SpongeSupervisorPid, MinionSupSpec) of
+                   {ok, Pid}                        when is_pid(Pid) -> Pid;
+                   {ok, Pid, _Info}                 when is_pid(Pid) -> Pid;
+                   {error, {already_started, Pid}}  when is_pid(Pid) -> Pid;
+                   {error, Pid}                     when is_pid(Pid) -> Pid
+                 end,
   log("The minion supersup has been started on ~p with pid ~p (attached to sponge supervisor ~p)~n",
       [node(), MinionSupPid, SpongeSupervisorPid]),
   log("hypnosponge_sup (~p) now has these children: ~p~n",
@@ -155,7 +181,7 @@ enslave_nodes(Nodes, MinionSupPid) ->
 enslave_node(Node, MinionSupPid) ->
   log("Enslaving Node ~p ...~n",[Node]),
   darklord_utils:load_code(Node),
-  {ok, Minion} = supervisor:start_child(MinionSupPid, [Node]),
+  {ok, Minion} = supervisor:start_child(MinionSupPid, [self(), Node]),
   _Ref = erlang:monitor(process, Minion),
   log("Enslaved ~p on node ~p~n",[Minion, Node]),
   log("minion_supersup (~p) now has these children: ~p~n",

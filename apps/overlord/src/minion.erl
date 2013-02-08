@@ -50,10 +50,10 @@ minion_message_handler(_Message={exit, Reason}, _HypnoSpongePid) ->
 minion_message_handler(_Message=sing, HypnoSpongePid) ->
   sing(),
   minion_wait(HypnoSpongePid);
-minion_message_handler(_Message={'DOWN', _Ref, process, DownMasterPid, _Reason}, _MasterPid) ->
+minion_message_handler(_Message={'DOWN', _Ref, process, DownPid, _Reason}, _HypnoSpongePid) ->
   %% If my parent dies, I too see no reason to live.
-  log("~p ~p My master (~p) died of reason '~p' ;-(. I too see no reason to live...~n",
-                                            [node(), self(), DownMasterPid, _Reason]),
+  log("~p ~p My sponge (~p) died of reason '~p' ;-(. I too see no reason to live...~n",
+                                            [node(), self(), DownPid, _Reason]),
   erlang:exit(shutdown);
 minion_message_handler(Message, HypnoSpongePid) ->
   log("~p ~p unknown message: ~p~n",[node(), self(), Message]),

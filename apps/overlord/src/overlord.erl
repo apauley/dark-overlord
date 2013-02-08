@@ -9,6 +9,9 @@
          minion_info/0,
          minion_crash/0,
          minion_exit/1,
+         sponge_crash/0,
+         sponge_exit/0,
+         sponge_exit/1,
          sing/0]).
 
 start() ->
@@ -29,6 +32,16 @@ minion_crash() ->
 
 minion_exit(Reason) ->
   hypnosponge:minion_exit(Reason).
+
+
+sponge_crash() ->
+  hypnosponge:sponge_crash().
+
+sponge_exit() ->
+  sponge_exit(normal).
+
+sponge_exit(Reason) ->
+  hypnosponge:sponge_exit(Reason).
 
 sing() ->
   hypnosponge:sing().

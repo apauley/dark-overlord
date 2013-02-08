@@ -33,7 +33,8 @@ load_code(Module, Node) ->
   rpc:call(Node, code, load_binary, [Module, Filename, Binary]).
 
 log(Module, String, Params) ->
-  log("~s ~p [~p] "++String, [timestamp(), node(), Module|Params]).
+  Node = atom_to_list(node()),
+  log("~s [~p] ~s ~p "++String, [timestamp(), Module, Node, self()|Params]).
 
 log(String, Params) ->
   Text = lists:flatten(io_lib:format(String, Params)),
