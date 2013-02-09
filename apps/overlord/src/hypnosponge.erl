@@ -6,7 +6,8 @@
 -define(DEFAULT_TIMEOUT, 5000).
 
 -record(state, {minion_supervisor,
-                minions=[]}).
+                minions=[],
+                sudoku_started=false}).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -22,6 +23,8 @@
          sponge_crash/0,
          sponge_exit/1,
          sing/0,
+         sudoku_start/0,
+         sudoku_stop/0,
          send/1]).
 
 %% ------------------------------------------------------------------
@@ -65,6 +68,12 @@ sponge_exit(Reason) ->
 sing() ->
   gen_server:call(?SERVER,sing,?DEFAULT_TIMEOUT).
 
+sudoku_start() ->
+  gen_server:call(?SERVER,sudoku_start,?DEFAULT_TIMEOUT).
+
+sudoku_stop() ->
+  gen_server:call(?SERVER,sudoku_stop,?DEFAULT_TIMEOUT).
+
 send(Message) ->
   gen_server:call(?SERVER,{send, Message},?DEFAULT_TIMEOUT).
 
@@ -89,6 +98,14 @@ handle_call(process_info, _From, State) ->
 handle_call(sing, _From, State) ->
   ok = minion_message(sing, State),
   {reply,ok,State};
+
+handle_call(sudoku_start, _From, State) ->
+  NewState = sudoku_start(State),
+  {reply,ok,NewState};
+
+handle_call(sudoku_stop, _From, State) ->
+  NewState = sudoku_stop(State),
+  {reply,ok,NewState};
 
 handle_call(minion_info, _From, State) ->
   ok = minion_message(minion_info, State),
@@ -121,9 +138,14 @@ handle_call({send, Message}, _From, State) ->
 
 handle_call(stop, _From, State) ->
   log("stop ~p~n",[_From]),
-  {stop,normal,State}.
+  {stop,normal,State};
+
+handle_call(Call, From, State) ->
+  log("Unexpected call ~p from ~p~n",[Call, From]),
+  {noreply,State}.
 
 handle_cast(_Msg, State) ->
+  log("Unexpected cast ~p~n",[_Msg]),
   {noreply, State}.
 
 handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
@@ -150,9 +172,13 @@ handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
 
 handle_info({aye_dark_overlord, Minion, Node}, State = #state{}) ->
   _Ref = erlang:monitor(process, Minion),
-  log("Minion ~p reporting for duty~n", [Minion]),
+  log("Minion ~p on ~s reporting for duty~n", [Minion, atom_to_list(Node)]),
   NewState = add_minion(Minion, Node, State),
   {noreply, NewState};
+
+handle_info({sudoku_solved, _SolvedCount, Minion, _Node}, State = #state{}) ->
+  ok = send_sudoku(Minion, State),
+  {noreply, State};
 
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
   log("~p ~p 'DOWN', Reason: ~p\n",[Pid, _Ref, _Reason]),
@@ -197,6 +223,23 @@ enslave_node(Node, MinionSuperSupPid) ->
   
   log_children(MinionSuperSupPid, minion_supersup),
   MinionSup.
+
+sudoku_start(State) ->
+  NewState = State#state{sudoku_started=true},
+  [send_sudoku(Minion, NewState) || Minion <- minions(NewState)],
+  NewState.
+
+sudoku_stop(State) ->
+  NewState = State#state{sudoku_started=false},
+  NewState.
+
+send_sudoku(Minion, #state{sudoku_started=true}) ->
+  Filename = filename:join(code:priv_dir(sudoku), "top95.txt"),
+  {ok, BinString} = file:read_file(Filename),
+  Minion ! {sudoku, BinString},
+  ok;
+send_sudoku(_Minion, #state{}) ->
+  ok.
 
 minions(State) ->
   State#state.minions.

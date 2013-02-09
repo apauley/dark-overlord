@@ -1,4 +1,11 @@
 %%% @author Andreas Pauley <>
+%%% @doc
+%%% Why write a makeshift supervisor instead of using a real one?
+%%% One reason is to learn more about supervisors by writing something that resembles one.
+%%% Another reason might be that I had trouble spawning a real supervisor on a remote node when the remote node
+%%% only had access to the code I loaded remotely onto it. I can probably get past those issues with a bit of effort,
+%%% but for now a makeshift supervisor will do nicely.
+%%% @end
 %%% Created :  8 Feb 2013 by Andreas Pauley <>
 
 -module(minion_makeshift_sup).
@@ -67,7 +74,7 @@ start_minion(State = #state{sponge_pid=HypnoSpongePid}) ->
   State#state{minion=Minion}.
 
 start_ping_server(State = #state{sponge_node=HypnoSpongeNode}) ->
-  PingPid = proc_lib:spawn_link(?MODULE, ping_server, [HypnoSpongeNode]),
+  {PingPid, _Ref} = spawn_monitor(?MODULE, ping_server, [HypnoSpongeNode]),
   State#state{ping_server=PingPid}.
 
 ping_server(Node) ->

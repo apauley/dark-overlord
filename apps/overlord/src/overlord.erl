@@ -12,6 +12,8 @@
          sponge_crash/0,
          sponge_exit/0,
          sponge_exit/1,
+         sudoku_start/0,
+         sudoku_stop/0,
          sing/0]).
 
 start() ->
@@ -45,3 +47,9 @@ sponge_exit(Reason) ->
 
 sing() ->
   hypnosponge:sing().
+
+sudoku_start() ->
+  hypnosponge:sudoku_start().
+
+sudoku_stop() ->
+  hypnosponge:sudoku_stop().

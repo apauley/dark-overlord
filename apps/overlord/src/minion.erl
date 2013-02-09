@@ -62,7 +62,7 @@ minion_info() ->
 %% ------------------------------------------------------------------
 
 report_for_duty(HypnoSpongePid) ->
-  log("Aye, Dark Overlord whith PID ~p~n", [HypnoSpongePid]),
+  log("Aye, Dark Overlord with PID ~p~n", [HypnoSpongePid]),
   HypnoSpongePid ! {aye_dark_overlord, self(), node()},
   ok.
 
@@ -75,6 +75,11 @@ minion_wait(HypnoSpongePid) ->
       minion_wait(HypnoSpongePid)
   end.
 
+handle_message(_Message={sudoku, BinString}, HypnoSpongePid) ->
+  MinionPid = self(),
+  Fun = fun() -> solve_sudoku_puzzles(BinString, MinionPid, HypnoSpongePid) end,
+  _Pid = proc_lib:spawn(Fun),
+  minion_wait(HypnoSpongePid);
 handle_message(_Message=minion_info, HypnoSpongePid) ->
   Info = minion_info(),
   HypnoSpongePid ! Info,
@@ -88,9 +93,20 @@ handle_message(_Message=sing, HypnoSpongePid) ->
   sing(),
   minion_wait(HypnoSpongePid);
 handle_message(Message, HypnoSpongePid) ->
-  log("~p ~p unknown message: ~p~n",[node(), self(), Message]),
+  log("Unknown message: ~p~n",[Message]),
   HypnoSpongePid ! {unknown_message, Message, minion_info()},
   minion_wait(HypnoSpongePid).
+
+solve_sudoku_puzzles(BinString, MinionPid, HypnoSpongePid) ->
+  Solutions = sudoku:solve_binary_string(BinString),
+  ok = send_solutions(Solutions, MinionPid, HypnoSpongePid).
+
+send_solutions(Solutions, MinionPid, HypnoSpongePid) ->
+  %% Only send the number of solved puzzles, for now we don't need more than that.
+  SolvedCount = length(Solutions),
+  log("Sending count of ~p solved puzzles to ~p on behalf of minion ~p~n", [SolvedCount, HypnoSpongePid, MinionPid]),
+  HypnoSpongePid ! {sudoku_solved, SolvedCount, MinionPid, node()},
+  ok.
 
 random_deranged_laugh() ->
   random_deranged_laugh(random:uniform(?DERANGEDLAUGH_RANDOM_MAX)).
