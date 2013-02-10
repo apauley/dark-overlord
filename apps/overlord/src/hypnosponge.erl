@@ -17,6 +17,7 @@
 
 -export([pids/0,
          process_info/0,
+         minion_nodes/0,
          minion_info/0,
          minion_crash/0,
          minion_exit/1,
@@ -49,6 +50,9 @@ pids() ->
 
 process_info() ->
   gen_server:call(?SERVER,process_info,?DEFAULT_TIMEOUT).
+
+minion_nodes() ->
+  gen_server:call(?SERVER,minion_nodes,?DEFAULT_TIMEOUT).
 
 minion_info() ->
   gen_server:call(?SERVER,minion_info,?DEFAULT_TIMEOUT).
@@ -106,6 +110,10 @@ handle_call(sudoku_start, _From, State) ->
 handle_call(sudoku_stop, _From, State) ->
   NewState = sudoku_stop(State),
   {reply,ok,NewState};
+
+handle_call(minion_nodes, _From, State) ->
+  Nodes = enslaved_nodes(State),
+  {reply,Nodes,State};
 
 handle_call(minion_info, _From, State) ->
   ok = minion_message(minion_info, State),
@@ -167,7 +175,9 @@ handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
   log_children(SpongeSupervisorPid, hypnosponge_sup),
   link(MinionSuperSupPid),
 
-  NewState = enslave_nodes(State#state{minion_supervisor=MinionSuperSupPid}),
+  SpongePid = self(),
+  _RecruiterPid = proc_lib:spawn(fun() -> minion_recruiter(SpongePid, MinionSuperSupPid) end),
+  NewState = State#state{minion_supervisor=MinionSuperSupPid},
   {noreply, NewState};
 
 handle_info({aye_dark_overlord, Minion, Node}, State = #state{}) ->
@@ -182,7 +192,8 @@ handle_info({sudoku_solved, _SolvedCount, Minion, _Node}, State = #state{}) ->
   {noreply, State};
 
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
-  log("~p ~p 'DOWN', Reason: ~p\n",[Pid, _Ref, _Reason]),
+  Node = atom_to_list(node(Pid)),
+  log("Received 'DOWN' from ~p (~s) Reason: ~p~n",[Pid, Node, _Reason]),
   
   NewState = case lists:member(Pid, minions(State)) of
                true ->
@@ -206,26 +217,35 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-enslave_nodes(State = #state{minion_supervisor=MinionSuperSupPid}) ->
-  _MinionSups = enslave_nodes(MinionSuperSupPid),
-  State;
-enslave_nodes(MinionSuperSupPid) when is_pid(MinionSuperSupPid) ->
-  enslave_nodes(minion_nodes(), MinionSuperSupPid).
+minion_recruiter(SpongePid, MinionSuperSupPid) ->
+  log("Hello from your minion_recruiter~n",[]),
+  minion_recruit_loop(SpongePid, MinionSuperSupPid).
 
-enslave_nodes(Nodes, MinionSuperSupPid) ->
-  [enslave_node(Node, MinionSuperSupPid) || Node <- Nodes].
+minion_recruit_loop(SpongePid, MinionSuperSupPid) ->
+  EnslavedMinionNodes = lists:sort(gen_server:call(SpongePid,minion_nodes,?DEFAULT_TIMEOUT)),
+  ConnectedMinionNodes = lists:sort(connected_minion_nodes()),
+  NewRecruits = ConnectedMinionNodes -- EnslavedMinionNodes,
+  enslave_nodes(NewRecruits, SpongePid, MinionSuperSupPid),
+  receive
+    Message ->
+      log("Unexpected message in minion_recruiter: ~p~n",[Message]),
+      minion_recruit_loop(SpongePid, MinionSuperSupPid)
+  after 1000 ->
+      minion_recruit_loop(SpongePid, MinionSuperSupPid)
+  end.
 
-enslave_node(Node, MinionSuperSupPid) ->
-  log("Enslaving Node ~p ...~n",[Node]),
+enslave_nodes(Nodes, SpongePid, MinionSuperSupPid) ->
+  [enslave_node(Node, SpongePid, MinionSuperSupPid) || Node <- Nodes].
+
+enslave_node(Node, SpongePid, MinionSuperSupPid) ->
   darklord_utils:load_code(Node),
-  {ok, MinionSup} = supervisor:start_child(MinionSuperSupPid, [self(), Node]),
+  {ok, MinionSup} = supervisor:start_child(MinionSuperSupPid, [SpongePid, Node]),
 
-  log("Enslaved minion sup ~p on node ~p~n",[MinionSup, Node]),
-  
+  log("Enslaved node ~p (remote minion supervisor is ~p)~n",[Node, MinionSup]),
   log_children(MinionSuperSupPid, minion_supersup),
   MinionSup.
 
-minion_nodes() ->
+connected_minion_nodes() ->
   nodes() -- overlord_nodes().
 
 overlord_nodes() ->
@@ -254,8 +274,11 @@ send_sudoku(Minion, #state{sudoku_started=true}) ->
 send_sudoku(_Minion, #state{}) ->
   ok.
 
-minions(State) ->
-  State#state.minions.
+minions(#state{minions=Minions}) ->
+  Minions.
+
+enslaved_nodes(State) ->
+  [node(Pid) || Pid <- minions(State)].
 
 add_minion(Minion, _Node, State) ->
   Minions = [Minion|minions(State)],
@@ -276,6 +299,6 @@ log(String, Params) ->
   darklord_utils:log(?MODULE, String, Params).
 
 log_children(SupPid, SupName) ->
-  Children = supervisor:which_children(SupPid),
+  Children = [Pid || {_,Pid,_WorkerOrSupervisor,_Name} <- supervisor:which_children(SupPid)],
   log("~p (~p) now has ~p children: ~p~n",
       [SupName, SupPid, length(Children), Children]).

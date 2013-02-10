@@ -6,6 +6,7 @@
 -export([start/0,
          stop/0,
          restart/0,
+         minion_nodes/0,
          minion_info/0,
          minion_crash/0,
          minion_exit/1,
@@ -25,6 +26,9 @@ stop() ->
 restart() ->
   stop(),
   start().
+
+minion_nodes() ->
+  hypnosponge:minion_nodes().
 
 minion_info() ->
   hypnosponge:minion_info().
