@@ -15,6 +15,7 @@
          sponge_exit/1,
          sudoku_start/0,
          sudoku_stop/0,
+         sudoku_stats/0,
          sing/0]).
 
 start() ->
@@ -57,3 +58,6 @@ sudoku_start() ->
 
 sudoku_stop() ->
   hypnosponge:sudoku_stop().
+
+sudoku_stats() ->
+  hypnosponge:sudoku_stats().

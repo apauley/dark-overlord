@@ -7,7 +7,8 @@
 
 -record(state, {minion_supervisor,
                 minions=[],
-                sudoku_started=false}).
+                sudoku_started=false,
+                sudoku_stats=dict:new()}).
 
 %% ------------------------------------------------------------------
 %% API Function Exports
@@ -26,6 +27,7 @@
          sing/0,
          sudoku_start/0,
          sudoku_stop/0,
+         sudoku_stats/0,
          send/1]).
 
 %% ------------------------------------------------------------------
@@ -78,6 +80,9 @@ sudoku_start() ->
 sudoku_stop() ->
   gen_server:call(?SERVER,sudoku_stop,?DEFAULT_TIMEOUT).
 
+sudoku_stats() ->
+  gen_server:call(?SERVER,sudoku_stats,?DEFAULT_TIMEOUT).
+
 send(Message) ->
   gen_server:call(?SERVER,{send, Message},?DEFAULT_TIMEOUT).
 
@@ -110,6 +115,10 @@ handle_call(sudoku_start, _From, State) ->
 handle_call(sudoku_stop, _From, State) ->
   NewState = sudoku_stop(State),
   {reply,ok,NewState};
+
+handle_call(sudoku_stats, _From, State) ->
+  Stats = sudoku_stats(State),
+  {reply,Stats,State};
 
 handle_call(minion_nodes, _From, State) ->
   Nodes = enslaved_nodes(State),
@@ -183,13 +192,14 @@ handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
 handle_info({aye_dark_overlord, Minion, Node}, State = #state{}) ->
   _Ref = erlang:monitor(process, Minion),
   log("Minion ~p on ~s reporting for duty~n", [Minion, atom_to_list(Node)]),
-  ok = send_sudoku(Minion, State),
   NewState = add_minion(Minion, Node, State),
+  ok = send_sudoku(Minion, NewState),
   {noreply, NewState};
 
-handle_info({sudoku_solved, _SolvedCount, Minion, _Node}, State = #state{}) ->
-  ok = send_sudoku(Minion, State),
-  {noreply, State};
+handle_info({sudoku_solved, SolvedCount, Minion, _Node}, State = #state{}) ->
+  NewState = update_sudoku_count(SolvedCount, Minion, State),
+  ok = send_sudoku(Minion, NewState),
+  {noreply, NewState};
 
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
   Node = atom_to_list(node(Pid)),
@@ -265,6 +275,14 @@ sudoku_start(State) ->
 sudoku_stop(State) ->
   NewState = State#state{sudoku_started=false},
   NewState.
+
+sudoku_stats(#state{sudoku_stats=Stats}) ->
+  dict:to_list(Stats).
+
+update_sudoku_count(SolvedCount, Minion, State = #state{sudoku_stats=Stats}) ->
+  Node = node(Minion),
+  NewStats = dict:update_counter(Node, SolvedCount, Stats),
+  State#state{sudoku_stats=NewStats}.
 
 send_sudoku(Minion, #state{sudoku_started=true}) ->
   Filename = filename:join(code:priv_dir(sudoku), "top95.txt"),
