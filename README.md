@@ -6,6 +6,8 @@ This code is intended to be used in a setup where one person (the dark overlord)
 demonstrates some cool Erlang/OTP features to a group of people with computers
 on the same network.
 
+I have only tested this on Erlang R15B03-1, older versions like R14B may or may not work as expected.
+
 Only the dark overlord needs to have this code compiled and loaded into an Erlang VM.
 The minions only need to connect to the master node.
 The necessary minion code will then be loaded into the remote nodes by the master node.
