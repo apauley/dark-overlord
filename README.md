@@ -51,7 +51,7 @@ Among other things this will start the hypnosponge.
 As you might very well know, any decent overlord needs a hypnosponge for Minion Mind Control (MMC).
 
 The overlord output may look like this:
-```bash
+```erlang
 $ ./rel/overlord/bin/overlord console
 Exec: /dark-overlord/rel/overlord/erts-5.9.3.1/bin/erlexec -boot /dark-overlord/rel/overlord/releases/1/overlord -mode embedded -config /dark-overlord/rel/overlord/releases/1/sys.config -args_file /dark-overlord/rel/overlord/releases/1/vm.args -- console
 Root: /dark-overlord/rel/overlord
@@ -78,7 +78,7 @@ Eshell V5.9.3.1  (abort with ^G)
 ```
 
 His evil twin:
-```
+```erlang
 $ ./rel/overlord/bin/overlord console
 Exec: /dark-overlord/rel/overlord/erts-5.9.3.1/bin/erlexec -boot /dark-overlord/rel/overlord/releases/1/overlord -mode embedded -config /dark-overlord/rel/overlord/releases/1/sys.config -args_file /dark-overlord/rel/overlord/releases/1/vm.args -- console
 Root: /dark-overlord/rel/overlord
@@ -174,10 +174,10 @@ We can also see what happens when our hypnosponge crashes:
 
 Have a look inside overlord.erl for some more exported functions.
 
-Finally, we need to test what happens if en entire node goes down.
+Finally, we need to test what happens if an entire node goes down.
 Kill the overlord node in some ungraceful way (I do ctrl-g followed by q).
 
 The app should failover to the evil twin, and you will be able to see the startup output on the node.
 
-You can bring back to overlord node once you have played a bit on the evil twin.
+You can bring back the overlord node once you have played a bit on the evil twin.
 The overlord node should do a takeover, and the app will be stopped on the evil twin node.
