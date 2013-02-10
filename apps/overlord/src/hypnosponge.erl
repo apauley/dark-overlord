@@ -209,7 +209,7 @@ enslave_nodes(State = #state{minion_supervisor=MinionSuperSupPid}) ->
   _MinionSups = enslave_nodes(MinionSuperSupPid),
   State;
 enslave_nodes(MinionSuperSupPid) when is_pid(MinionSuperSupPid) ->
-  enslave_nodes(nodes(), MinionSuperSupPid).
+  enslave_nodes(minion_nodes(), MinionSuperSupPid).
 
 enslave_nodes(Nodes, MinionSuperSupPid) ->
   [enslave_node(Node, MinionSuperSupPid) || Node <- Nodes].
@@ -223,6 +223,18 @@ enslave_node(Node, MinionSuperSupPid) ->
   
   log_children(MinionSuperSupPid, minion_supersup),
   MinionSup.
+
+minion_nodes() ->
+  nodes() -- overlord_nodes().
+
+overlord_nodes() ->
+  case application:get_env(kernel, sync_nodes_mandatory) of
+    {ok, Nodes} ->
+      Nodes;
+    _Else ->
+      [node()]
+  end.
+
 
 sudoku_start(State) ->
   NewState = State#state{sudoku_started=true},
