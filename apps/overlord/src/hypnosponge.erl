@@ -173,6 +173,7 @@ handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
 handle_info({aye_dark_overlord, Minion, Node}, State = #state{}) ->
   _Ref = erlang:monitor(process, Minion),
   log("Minion ~p on ~s reporting for duty~n", [Minion, atom_to_list(Node)]),
+  ok = send_sudoku(Minion, State),
   NewState = add_minion(Minion, Node, State),
   {noreply, NewState};
 
