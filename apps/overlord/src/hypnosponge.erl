@@ -277,7 +277,7 @@ sudoku_stop(State) ->
   NewState.
 
 sudoku_stats(#state{sudoku_stats=Stats}) ->
-  dict:to_list(Stats).
+  lists:keysort(2, dict:to_list(Stats)).
 
 update_sudoku_count(SolvedCount, Minion, State = #state{sudoku_stats=Stats}) ->
   Node = node(Minion),
