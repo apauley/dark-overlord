@@ -1,7 +1,7 @@
 ## Name of the node
-#-name overlord@10.0.0.101
+-name overlord@10.0.0.103
 #-name overlord@192.168.8.123
--name overlord@127.0.0.1
+#-name overlord@127.0.0.1
 
 ## Cookie for distributed erlang
 -setcookie overlord
