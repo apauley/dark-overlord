@@ -184,6 +184,172 @@ The app should failover to the evil twin, and you will be able to see the startu
 You can bring back the overlord node once you have played a bit on the evil twin.
 The overlord node should do a takeover, and the app will be stopped on the evil twin node.
 
+## Detailed Overview
+
+> &ldquo;If a listener nods his head when you're explaining your program, wake him up.&rdquo;
+>
+> &mdash; <cite>Alan Perlis</cite>
+
+### App Startup
+
+Our code is started using the following general order:
+Release -> Applications -> Supervisors -> Workers
+
+The release ensures that all applications are started at boot time.
+One if these is our overlord application.
+
+The overlord application starts the *hypnosponge supervisor*.
+The *hypnosponge supervisor* starts the first worker, our *hypnosponge*.
+
+The first thing that the *hypnosponge* does after starting up is to
+start a *minion supersup*, attached to the *hypnosponge supervisor*.
+
+It also spawns a *minion recruiter*, responsible for detecting and
+enslaving new minions.
+
+The *hypnosponge supervisor* is now responsible for monitoring 2
+processes:
+ * the *hypnosponge*
+ * the *minion supersup*
+
+The *minion supersup* is running on the overlord node. It has the
+responsibility of starting and monitoring the supervisors on the remote minion nodes.
+As soon as the *minion recruiter* detects a newly connected node, it
+will instruct the *minion supersup* to start a *minion supervisor* on
+the remote node.
+
+The *minion supervisor* runs on the remote minion node.
+It immediately starts and monitors the *minion*, which will do the
+actual work.
+
+### When processes die: a guide to the afterlife
+
+If our *minion* dies for any reason, the *minion
+supervisor* is tasked to respawn it.
+
+If the *minion supervisor* dies, then the *minion supersup* will know
+about this and do whatever we configured it to do. Because this link
+is between different nodes over a network, it could be that the
+*minion supersup* gets notified because the entire node went down.
+If this is the case we do not want our *minion supersup* to make
+countless futile attempts at restarting the remote *minion
+supervisor*.
+Instead, the *minion supersup* will do nothing and just wait for the
+*minion recruiter* to detect that the node is up and available for
+enslavement.
+
+The *hypnosponge supervisor* will restart any of the following
+processes, should they die on us:
+ * The *minion supersup*
+ * The *hypnosponge*
+
+If the *hypnosponge supervisor* dies the entire overlord node will
+crash.
+We can do this by sending a kill signal to the process ID:
+```erlang
+(overlord@192.168.8.123)11> Sup = pid(0,58,0).
+<0.58.0>
+(overlord@192.168.8.123)12> exit(Sup, kill).
+
+=ERROR REPORT==== 11-Feb-2013::12:16:49 ===
+** Generic server minion_supersup terminating 
+** Last message in was {'EXIT',<0.58.0>,killed}
+** When Server state == {state,
+                            {local,minion_supersup},
+                            simple_one_for_one,
+                            [{child,undefined,minion_makeshift_sup,
+                                 {minion_makeshift_sup,start_link,[]},
+                                 temporary,5000,worker,
+                                 [minion_makeshift_sup]}],
+                            undefined,1,3,[],minion_supersup,[]}
+** Reason for termination == 
+** killed
+true
+(overlord@192.168.8.123)13> 
+=INFO REPORT==== 11-Feb-2013::12:16:49 ===
+    application: overlord
+    exited: killed
+    type: permanent
+
+{"Kernel pid terminated",application_controller,"{application_terminated,overlord,killed}"}
+
+Crash dump was written to: erl_crash.dump
+Kernel pid terminated (application_controller) ({application_terminated,overlord,killed})
+```
+
+If the *overlord_app* dies the overlord node will also crash:
+```erlang
+(overlord@192.168.8.123)14> App = pid(0,57,0).
+<0.57.0>
+(overlord@192.168.8.123)15> exit(App, kill).
+true
+(overlord@192.168.8.123)16> 
+=INFO REPORT==== 11-Feb-2013::12:30:33 ===
+    application: overlord
+    exited: killed
+    type: permanent
+(overlord@192.168.8.123)17> {"Kernel pid terminated",application_controller,"{application_terminated,overlord,killed}"}
+
+Crash dump was written to: erl_crash.dump
+Kernel pid terminated (application_controller) ({application_terminated,overlord,killed})
+```
+
+In the two cases above I actually want the evil twin to
+automatically take over. This does not currently happen. Some
+investigation is in order...
+
+What does work quite nicely however, is when the Erlang VM is killed.
+```bash
+$ kill -9 25561
+```
+
+```erlang
+(overlord@192.168.8.123)18> Killed: 9
+```
+
+Now the failover happens to the evil twin within our configured 5 seconds:
+```erlang
+(eviltwin@192.168.8.124)1> 12:38:48.744 eviltwin@192.168.8.124 [overlord_app] <0.80.0> || Starting app: normal
+12:38:48.745 eviltwin@192.168.8.124 [hypnosponge_sup] <0.81.0> || Hello from the hypnosponge supervisor
+12:38:48.745 eviltwin@192.168.8.124 [hypnosponge] <0.82.0> || Hello from the hypnosponge itself!
+12:38:48.745 eviltwin@192.168.8.124 [minion_supersup] <0.83.0> || Hello from the minion supersup
+12:38:48.745 eviltwin@192.168.8.124 [hypnosponge] <0.82.0> || The minion supersup (<0.83.0>) has been attached to hypnosponge_sup (<0.81.0>)
+12:38:48.745 eviltwin@192.168.8.124 [hypnosponge] <0.82.0> || hypnosponge_sup (<0.81.0>) now has 2 children: [<0.83.0>,
+                                                                                                          <0.82.0>]
+12:38:48.745 eviltwin@192.168.8.124 [hypnosponge] <0.84.0> || Hello from your minion_recruiter
+
+(eviltwin@192.168.8.124)1> 
+```
+
+As soon as the overlord node is started again it will take over:
+```erlang
+$ ./rel/overlord/bin/overlord console
+Exec: /dark-overlord/rel/overlord/erts-5.9.3.1/bin/erlexec -boot /dark-overlord/rel/overlord/releases/1/overlord -mode embedded -config /dark-overlord/rel/overlord/releases/1/sys.config -args_file /dark-overlord/rel/overlord/releases/1/vm.args -- console
+Root: /dark-overlord/rel/overlord
+Erlang R15B03 (erts-5.9.3.1) [source] [64-bit] [smp:8:8] [async-threads:0] [hipe] [kernel-poll:false] [dtrace]
+
+12:46:40.598 overlord@192.168.8.123 [overlord_app] <0.56.0> || Taking over from 'eviltwin@192.168.8.124'
+12:46:40.598 overlord@192.168.8.123 [hypnosponge_sup] <0.57.0> || Hello from the hypnosponge supervisor
+12:46:40.598 overlord@192.168.8.123 [hypnosponge] <0.58.0> || Hello from the hypnosponge itself!
+12:46:40.599 overlord@192.168.8.123 [minion_supersup] <0.59.0> || Hello from the minion supersup
+12:46:40.599 overlord@192.168.8.123 [hypnosponge] <0.58.0> || The minion supersup (<0.59.0>) has been attached to hypnosponge_sup (<0.57.0>)
+12:46:40.599 overlord@192.168.8.123 [hypnosponge] <0.58.0> || hypnosponge_sup (<0.57.0>) now has 2 children: [<0.59.0>,
+                                                                                                          <0.58.0>]
+12:46:40.599 overlord@192.168.8.123 [hypnosponge] <0.60.0> || Hello from your minion_recruiter
+Eshell V5.9.3.1  (abort with ^G)
+(overlord@192.168.8.123)1> 
+```
+
+On the eviltwin node we see that the application was stopped:
+```erlang
+=INFO REPORT==== 11-Feb-2013::12:46:40 ===
+    application: overlord
+    exited: stopped
+    type: permanent
+
+(eviltwin@192.168.8.124)1> 
+```
+
 ## Credits
 
 I did a lot of the code while reading "Learn you Some Erlang".
