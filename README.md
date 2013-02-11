@@ -183,3 +183,13 @@ The app should failover to the evil twin, and you will be able to see the startu
 
 You can bring back the overlord node once you have played a bit on the evil twin.
 The overlord node should do a takeover, and the app will be stopped on the evil twin node.
+
+## Credits
+
+I did a lot of the code while reading "Learn you Some Erlang".
+This is a very cool book, check it out.
+
+Specifically, the following chapters were very helpful:
+ * http://learnyousomeerlang.com/distribunomicon
+ * http://learnyousomeerlang.com/building-applications-with-otp
+ * http://learnyousomeerlang.com/distributed-otp-applications
