@@ -202,10 +202,16 @@ The overlord application starts the *hypnosponge supervisor*.
 The *hypnosponge supervisor* starts the first worker, our *hypnosponge*.
 
 The first thing that the *hypnosponge* does after starting up is to
-start a *minion supersup*, attached to the *hypnosponge supervisor*.
+ask the *hypnosponge supervisor* to start another child, the *minion
+supersup*.
+Thy *hypnosponge* links itself to the *minion supersup*, so that in
+the event that one of them dies, they will both be restarted by the
+*hypnosponge supervisor*.
 
-It also spawns a *minion recruiter*, responsible for detecting and
-enslaving new minions.
+The *hypnosponge* also spawns a *minion recruiter*, responsible for detecting and
+enslaving new minions. The *minion recruiter* and the *hypnosponge*
+are linked, so that in the event that one of them dies, they will
+both be restarted by the *hypnosponge supervisor*.
 
 The *hypnosponge supervisor* is now responsible for monitoring 2
 processes:

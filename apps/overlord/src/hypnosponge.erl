@@ -5,8 +5,7 @@
 -define(SERVER, ?MODULE).
 -define(DEFAULT_TIMEOUT, 5000).
 
--record(state, {minion_supervisor,
-                minions=[],
+-record(state, {minions=[],
                 sudoku_started=false,
                 sudoku_stats=dict:new()}).
 
@@ -14,7 +13,8 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/1, stop/0]).
+-export([start_link/1,
+         stop/0]).
 
 -export([pids/0,
          process_info/0,
@@ -91,7 +91,7 @@ send(Message) ->
 %% ------------------------------------------------------------------
 
 init([SpongeSupervisorPid]) ->
-  self() ! {start_minion_supervisor, SpongeSupervisorPid},
+  self() ! {start_minion_supersup, SpongeSupervisorPid},
   log("Hello from the hypnosponge itself!~n",[]),
   {ok, #state{}}.
 
@@ -165,29 +165,9 @@ handle_cast(_Msg, State) ->
   log("Unexpected cast ~p~n",[_Msg]),
   {noreply, State}.
 
-handle_info({start_minion_supervisor, SpongeSupervisorPid}, State = #state{}) ->
-  MinionSupSpec = {minion_supersup,
-                   {minion_supersup, start_link, []},
-                   permanent,
-                   10000,
-                   supervisor,
-                   [minion_supersup]},
-  MinionSuperSupPid = case supervisor:start_child(SpongeSupervisorPid, MinionSupSpec) of
-                        {ok, Pid}                        when is_pid(Pid) -> Pid;
-                        {ok, Pid, _Info}                 when is_pid(Pid) -> Pid;
-                        {error, {already_started, Pid}}  when is_pid(Pid) -> Pid;
-                        {error, Pid}                     when is_pid(Pid) -> Pid
-                      end,
-  log("The minion supersup (~p) has been attached to hypnosponge_sup (~p)~n",
-      [MinionSuperSupPid, SpongeSupervisorPid]),
-  
-  log_children(SpongeSupervisorPid, hypnosponge_sup),
-  link(MinionSuperSupPid),
-
-  SpongePid = self(),
-  _RecruiterPid = proc_lib:spawn(fun() -> minion_recruiter(SpongePid, MinionSuperSupPid) end),
-  NewState = State#state{minion_supervisor=MinionSuperSupPid},
-  {noreply, NewState};
+handle_info({start_minion_supersup, SpongeSupervisorPid}, State = #state{}) ->
+  ok = start_minion_supersup(SpongeSupervisorPid),
+  {noreply, State};
 
 handle_info({aye_dark_overlord, Minion, Node}, State = #state{}) ->
   _Ref = erlang:monitor(process, Minion),
@@ -227,45 +207,35 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-minion_recruiter(SpongePid, MinionSuperSupPid) ->
-  log("Hello from your minion_recruiter~n",[]),
-  minion_recruit_loop(SpongePid, MinionSuperSupPid).
+start_minion_supersup(SpongeSupervisorPid) ->
+  ChildModule = minion_supersup,
+  ChildSpec = {ChildModule,
+               {ChildModule, start_link, []},
+               permanent,
+               10000,
+               supervisor,
+               [ChildModule]},
+  MinionSuperSupPid = start_supervisor_child(ChildModule,
+                                             ChildSpec,
+                                             _SupName=hypnosponge_sup,
+                                             SpongeSupervisorPid),
 
-minion_recruit_loop(SpongePid, MinionSuperSupPid) ->
-  EnslavedMinionNodes = lists:sort(gen_server:call(SpongePid,minion_nodes,?DEFAULT_TIMEOUT)),
-  ConnectedMinionNodes = lists:sort(connected_minion_nodes()),
-  NewRecruits = ConnectedMinionNodes -- EnslavedMinionNodes,
-  enslave_nodes(NewRecruits, SpongePid, MinionSuperSupPid),
-  receive
-    Message ->
-      log("Unexpected message in minion_recruiter: ~p~n",[Message]),
-      minion_recruit_loop(SpongePid, MinionSuperSupPid)
-  after 1000 ->
-      minion_recruit_loop(SpongePid, MinionSuperSupPid)
-  end.
+  SpongePid = self(),
+  {ok, _RecruiterPid} = minion_recruiter:start_link(SpongePid, MinionSuperSupPid),
+  ok.
 
-enslave_nodes(Nodes, SpongePid, MinionSuperSupPid) ->
-  [enslave_node(Node, SpongePid, MinionSuperSupPid) || Node <- Nodes].
-
-enslave_node(Node, SpongePid, MinionSuperSupPid) ->
-  darklord_utils:load_code(Node),
-  {ok, MinionSup} = supervisor:start_child(MinionSuperSupPid, [SpongePid, Node]),
-
-  log("Enslaved node ~p (remote minion supervisor is ~p)~n",[Node, MinionSup]),
-  log_children(MinionSuperSupPid, minion_supersup),
-  MinionSup.
-
-connected_minion_nodes() ->
-  nodes() -- overlord_nodes().
-
-overlord_nodes() ->
-  case application:get_env(kernel, sync_nodes_mandatory) of
-    {ok, Nodes} ->
-      Nodes;
-    _Else ->
-      [node()]
-  end.
-
+start_supervisor_child(ChildModule, ChildSpec, SupName, SupPid) ->
+  ChildPid = case supervisor:start_child(SupPid, ChildSpec) of
+               {ok, Pid}                        when is_pid(Pid) -> Pid;
+               {ok, Pid, _Info}                 when is_pid(Pid) -> Pid;
+               {error, {already_started, Pid}}  when is_pid(Pid) -> Pid
+             end,
+  log("~p (~p) has been attached to ~p (~p)~n",
+      [ChildModule, ChildPid, SupName, SupPid]),
+  
+  darklord_utils:log_supervisor_children(?MODULE, SupPid, SupName),
+  link(ChildPid),
+  ChildPid.
 
 sudoku_start(State) ->
   NewState = State#state{sudoku_started=true},
@@ -315,8 +285,3 @@ minion_message(Message, State) ->
 
 log(String, Params) ->
   darklord_utils:log(?MODULE, String, Params).
-
-log_children(SupPid, SupName) ->
-  Children = [Pid || {_,Pid,_WorkerOrSupervisor,_Name} <- supervisor:which_children(SupPid)],
-  log("~p (~p) now has ~p children: ~p~n",
-      [SupName, SupPid, length(Children), Children]).

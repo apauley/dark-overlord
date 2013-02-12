@@ -6,7 +6,7 @@
 
 -export([multicall/1, multicall/2,
          load_code/0, load_code/1,
-         log/3]).
+         log/3, log_supervisor_children/3]).
 
 multicall(FunctionName) ->
   multicall(FunctionName, _Args=[]).
@@ -15,11 +15,7 @@ multicall(FunctionName, Args) ->
   multicall(FunctionName, Args, _Timeout=10000).
 
 multicall(FunctionName, Args, Timeout) ->
-  code_loads(),
   rpc:multicall(minion, FunctionName, Args, Timeout).
-
-code_loads() ->
-  abcast = c:nl(minion).
 
 load_code() ->
   [load_code(Node) || Node <- nodes()].
@@ -39,6 +35,11 @@ log(Module, String, Params) ->
 log(String, Params) ->
   Text = lists:flatten(io_lib:format(String, Params)),
   erlang:display_string(Text).
+
+log_supervisor_children(Module, SupPid, SupName) ->
+  Children = [Pid || {_,Pid,_WorkerOrSupervisor,_Name} <- supervisor:which_children(SupPid)],
+  log(Module, "~p (~p) now has ~p children: ~p~n",
+      [SupName, SupPid, length(Children), Children]).
 
 timestamp() ->
   timestamp(os:timestamp()).
