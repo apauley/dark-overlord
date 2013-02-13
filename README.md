@@ -146,9 +146,9 @@ pong
 
 Once your minions start connecting, you will see output similar to the following in your console:
 ```
-overlord@10.1.1.1 [hypnosponge] <0.61.0> || Enslaved node 'minion@10.0.0.101' (remote minion supervisor is <20972.48.0>)
+overlord@10.1.1.1 [hypnosponge] <0.61.0> || Enslaved node 'minion@10.1.1.101' (remote minion supervisor is <20972.48.0>)
 22:37:43.393 overlord@10.1.1.1 [hypnosponge] <0.61.0> || minion_supersup (<0.60.0>) now has 1 children: [<20972.48.0>]
-22:37:43.465 overlord@10.1.1.1 [hypnosponge] <0.59.0> || Minion <20972.50.0> on minion@10.0.0.101 reporting for duty
+22:37:43.465 overlord@10.1.1.1 [hypnosponge] <0.59.0> || Minion <20972.50.0> on minion@10.1.1.101 reporting for duty
 ```
 
 Now you can compell your minions to do your bidding out of "their own free will", muhahaha!!!
