@@ -118,12 +118,10 @@ PING 192.168.8.123 (192.168.8.123): 56 data bytes
 round-trip min/avg/max/stddev = 0.110/0.110/0.110/0.000 ms
 ```
 
-Once the above is working you can connect to the overlord node:
+Once the above is working you can connect to the overlord node (change the IP addresses of the minion and overlord as appropriate):
 ```bash
-$ erl -name minion -setcookie overlord -s net_adm ping_list overlord@192.168.8.123
+$ erl -name minion@127.0.0.1 -setcookie overlord -s net_adm ping_list overlord@192.168.8.123
 ```
-
-You may need to change "-name minion" above to include the minion IP, as in "-name minion@192.168.8.111".
 
 You can enter some shell commands to check if it worked. You should see your overlord in the list of nodes:
 
@@ -197,6 +195,8 @@ Release -> Applications -> Supervisors -> Workers
 
 The release ensures that all applications are started at boot time.
 One if these is our overlord application.
+
+[[https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg]]
 
 The overlord application starts the *hypnosponge supervisor*.
 The *hypnosponge supervisor* starts the first worker, our *hypnosponge*.
