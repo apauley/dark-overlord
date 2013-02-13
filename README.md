@@ -1,5 +1,7 @@
 How can we demo distributed Erlang if not by having a dark overlord control an army of minions...
 
+[[https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg]]
+
 ## Overview
 
 This code is intended to be used in a setup where one person (the dark overlord)
@@ -195,8 +197,6 @@ Release -> Applications -> Supervisors -> Workers
 
 The release ensures that all applications are started at boot time.
 One if these is our overlord application.
-
-[[https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg]]
 
 The overlord application starts the *hypnosponge supervisor*.
 The *hypnosponge supervisor* starts the first worker, our *hypnosponge*.
