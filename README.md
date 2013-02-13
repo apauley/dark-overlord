@@ -1,6 +1,6 @@
 How can we demo distributed Erlang if not by having a dark overlord control an army of minions...
 
-[[https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg]]
+![Startup sequence of our dark overlord app](https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg "Startup sequence for Supervisors and Workers")
 
 ## Overview
 
