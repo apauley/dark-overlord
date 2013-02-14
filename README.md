@@ -61,7 +61,7 @@ Now we can start an Erlang shell with our apps loaded.
 Both master nodes have to be started at roughly the same time.
 
 The overlord output may look like this:
-```erlang
+```erlang-repl
 $ ./rel/overlord/bin/overlord console
 Exec: /dark-overlord/rel/overlord/erts-5.9.3.1/bin/erlexec -boot /dark-overlord/rel/overlord/releases/1/overlord -mode embedded -config /dark-overlord/rel/overlord/releases/1/sys.config -args_file /dark-overlord/rel/overlord/releases/1/vm.args -- console
 Root: /dark-overlord/rel/overlord
@@ -88,7 +88,7 @@ Eshell V5.9.3.1  (abort with ^G)
 ```
 
 His evil twin:
-```erlang
+```erlang-repl
 $ ./rel/overlord/bin/overlord console
 Exec: /dark-overlord/rel/overlord/erts-5.9.3.1/bin/erlexec -boot /dark-overlord/rel/overlord/releases/1/overlord -mode embedded -config /dark-overlord/rel/overlord/releases/1/sys.config -args_file /dark-overlord/rel/overlord/releases/1/vm.args -- console
 Root: /dark-overlord/rel/overlord
@@ -133,7 +133,7 @@ $ erl -name minion@127.0.0.1 -setcookie overlord -s net_adm ping_list overlord@1
 
 You can enter some shell commands to check if it worked. You should see your overlord in the list of nodes:
 
-```erlang
+```erlang-repl
 (minion@iris)1> nodes().
 [overlord@10.1.1.1]
 (minion@iris)2> net_adm:ping('overlord@10.1.1.1').
@@ -152,7 +152,7 @@ overlord@10.1.1.1 [hypnosponge] <0.61.0> || Enslaved node 'minion@10.1.1.101' (r
 Now you can use the exported API functions in the overlord module to
 send commands to your minions, for example:
 
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)3> overlord:minion_nodes().
 (overlord@10.1.1.1)4> overlord:minion_info().
 (overlord@10.1.1.1)5> overlord:sing().
@@ -162,23 +162,23 @@ Our overlord needs his minions to do some very important work for him, like solv
 Once you start this, the minions will have a huge CPU load. Not that
 we care much about them...
 
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)6> overlord:sudoku_start().
 (overlord@10.1.1.1)7> overlord:sudoku_stats(). %% Do this a few times
 ```
 
 While the minions are hard at work, we can see what happens if they crash:
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)8> overlord:minion_crash().
 ```
 
 And to stop the madness:
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)9> overlord:sudoku_stop().
 ```
 
 We can also see what happens when our hypnosponge crashes:
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)10> overlord:sponge_crash().
 ```
 
@@ -263,7 +263,7 @@ processes, should they die on us:
 If the *hypnosponge supervisor* dies the entire overlord node will
 crash.
 We can do this by sending a kill signal to the process ID:
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)11> Sup = pid(0,58,0).
 <0.58.0>
 (overlord@10.1.1.1)12> exit(Sup, kill).
@@ -295,7 +295,7 @@ Kernel pid terminated (application_controller) ({application_terminated,overlord
 ```
 
 If the *overlord_app* dies the overlord node will also crash:
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)14> App = pid(0,57,0).
 <0.57.0>
 (overlord@10.1.1.1)15> exit(App, kill).
@@ -320,12 +320,12 @@ What does work quite nicely however, is when the Erlang VM is killed.
 $ kill -9 25561
 ```
 
-```erlang
+```erlang-repl
 (overlord@10.1.1.1)18> Killed: 9
 ```
 
 Now the failover happens to the evil twin within our configured 5 seconds:
-```erlang
+```erlang-repl
 (eviltwin@10.1.1.2)1> 12:38:48.744 eviltwin@10.1.1.2 [overlord_app] <0.80.0> || Starting app: normal
 12:38:48.745 eviltwin@10.1.1.2 [hypnosponge_sup] <0.81.0> || Hello from the hypnosponge supervisor
 12:38:48.745 eviltwin@10.1.1.2 [hypnosponge] <0.82.0> || Hello from the hypnosponge itself!
@@ -339,7 +339,7 @@ Now the failover happens to the evil twin within our configured 5 seconds:
 ```
 
 As soon as the overlord node is started again it will take over:
-```erlang
+```erlang-repl
 $ ./rel/overlord/bin/overlord console
 Exec: /dark-overlord/rel/overlord/erts-5.9.3.1/bin/erlexec -boot /dark-overlord/rel/overlord/releases/1/overlord -mode embedded -config /dark-overlord/rel/overlord/releases/1/sys.config -args_file /dark-overlord/rel/overlord/releases/1/vm.args -- console
 Root: /dark-overlord/rel/overlord
@@ -358,7 +358,7 @@ Eshell V5.9.3.1  (abort with ^G)
 ```
 
 On the eviltwin node we see that the application was stopped:
-```erlang
+```erlang-repl
 =INFO REPORT==== 11-Feb-2013::12:46:40 ===
     application: overlord
     exited: stopped
