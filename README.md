@@ -11,8 +11,6 @@ As you might very well know, any decent overlord needs a hypnosponge for Minion 
 With the use of your trusted hypnosponge you will be able to have
 every enslaved minion do your bidding "out of their own free will".
 
-Muhahahaaaaaa!!!!!
-
 ![Startup sequence of our dark overlord app](https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg "Startup sequence for Supervisors and Workers")
 
 This code is intended to be used in a setup where one person (the dark overlord)
@@ -151,7 +149,8 @@ overlord@10.1.1.1 [hypnosponge] <0.61.0> || Enslaved node 'minion@10.1.1.101' (r
 22:37:43.465 overlord@10.1.1.1 [hypnosponge] <0.59.0> || Minion <20972.50.0> on minion@10.1.1.101 reporting for duty
 ```
 
-Now you can compell your minions to do your bidding out of "their own free will", muhahaha!!!
+Now you can use the exported API functions in the overlord module to
+send commands to your minions, for example:
 
 ```erlang
 (overlord@10.1.1.1)3> overlord:minion_nodes().
