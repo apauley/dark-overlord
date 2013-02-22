@@ -11,7 +11,7 @@ As you might very well know, any decent overlord needs a hypnosponge for Minion 
 With the use of your trusted hypnosponge you will be able to have
 every enslaved minion do your bidding "out of their own free will".
 
-![Startup sequence of our dark overlord app](https://raw.github.com/apauley/dark-overlord/master/start_sequence.jpg "Startup sequence for Supervisors and Workers")
+![The Dark Overlord has trouble solving neon-brown-belt Sudoku puzzles](https://raw.github.com/apauley/dark-overlord/master/images/sudoku_comic_strip.jpg "The Dark Overlord has trouble solving neon-brown-belt Sudoku puzzles")
 
 This code is intended to be used in a setup where one person (the dark overlord)
 demonstrates some cool Erlang/OTP features to a group of people with computers
@@ -206,8 +206,7 @@ Release -> Applications -> Supervisors -> Workers
 The release ensures that all applications are started at boot time.
 One if these is our overlord application.
 
-Have a look at the picture of our app startup sequence above for a
-visual representation of this section.
+![Startup sequence of our dark overlord app](https://raw.github.com/apauley/dark-overlord/master/images/start_sequence.jpg "Startup sequence for Supervisors and Workers")
 
 The overlord application starts the *hypnosponge supervisor*.
 The *hypnosponge supervisor* starts the first worker, our *hypnosponge*.
@@ -376,3 +375,17 @@ Specifically, the following chapters were very helpful:
  * http://learnyousomeerlang.com/distribunomicon
  * http://learnyousomeerlang.com/building-applications-with-otp
  * http://learnyousomeerlang.com/distributed-otp-applications
+
+## Art
+
+The overlord and minion artwork comes from a card game called
+"[Aye, Dark Overlord!](http://boardgamegeek.com/boardgame/18723/aye-dark-overlord)"
+by [Stratelibri](http://www.stratelibri.it/).
+
+They have generously allowed me to use their images, please see the
+[LICENSE][license] file for details.
+
+I take all the blame for the image of the hypnosponge, and will gladly accept a better version from more artistic people than myself :-)
+
+
+[license]: https://github.com/apauley/dark-overlord/blob/master/LICENSE.md
