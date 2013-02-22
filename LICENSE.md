@@ -1,6 +1,14 @@
+# The Art
+
+The artwork is used with the permission of Stratelibri srl. © & ™ Stratelibri 2013. All rights are reserved.
+
+Aye, Dark Overlord is © & ™ 2005, 2009, 2013 Stratelibri srl. No part of the product and of the artwork may be reproduced without specific permission.
+
+www.stratelibri.it - info@stratelibri.it.
+
 # The Code
 
-Copyright (c) 2012 Andreas Pauley
+Copyright © 2013 Andreas Pauley
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -22,11 +30,3 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 http://opensource.org/licenses/mit-license.php
-
-# The Art
-
-The artwork is used with the permission of Stratelibri srl. © & ™ Stratelibri 2013. All rights are reserved.
-
-Aye, Dark Overlord is © & ™ 2005, 2009, 2013 Stratelibri srl. No part of the product and of the artwork may be reproduced without specific permission.
-
-www.stratelibri.it - info@stratelibri.it.
