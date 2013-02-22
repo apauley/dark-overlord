@@ -25,4 +25,8 @@ http://opensource.org/licenses/mit-license.php
 
 # The Art
 
-The artwork is used with the permission of Stratelibri srl. © & ™ Stratelibri 2013. All rights are reserved. Aye, Dark Overlord is © & ™ 2005, 2009, 2013 Stratelibri srl. No part of the product and of the artwork may be reproduced without specific permission. www.stratelibri.it - info@stratelibri.it.
+The artwork is used with the permission of Stratelibri srl. © & ™ Stratelibri 2013. All rights are reserved.
+
+Aye, Dark Overlord is © & ™ 2005, 2009, 2013 Stratelibri srl. No part of the product and of the artwork may be reproduced without specific permission.
+
+www.stratelibri.it - info@stratelibri.it.

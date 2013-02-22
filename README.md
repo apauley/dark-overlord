@@ -368,6 +368,8 @@ On the eviltwin node we see that the application was stopped:
 
 # Credits
 
+## Code
+
 I did a lot of the code while reading "Learn you Some Erlang".
 This is a very cool book, check it out.
 
